@@ -103,9 +103,9 @@ class AntsAIAnalyzer:
         
         return validation_results
     
-    def comprehensive_analysis(self):
-        """Perform comprehensive statistical analysis"""
-        print(f"\n📈 COMPREHENSIVE STATISTICAL ANALYSIS")
+    def full_analysis(self):
+        """Perform full statistical analysis"""
+        print(f"\n📈 full STATISTICAL ANALYSIS")
         print("=" * 50)
         
         # Summary statistics
@@ -315,7 +315,7 @@ def main():
         analyzer.validate_against_raw_outputs(args.sample_size)
     
     if args.all or True:  # Always run basic analysis
-        analyzer.comprehensive_analysis()
+        analyzer.full_analysis()
         analyzer.performance_trends()
         analyzer.statistical_significance()
     

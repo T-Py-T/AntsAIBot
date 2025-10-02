@@ -1,11 +1,11 @@
 # Advanced Ants AI Bot: Transitioning from Senior Development to AI Engineering
 
-**Bottom Line**: As a senior Python/Go developer, I applied my algorithmic problem-solving skills to develop a functional AI bot with comprehensive testing infrastructure. While the current bot underperforms against advanced opponents, this project demonstrates my systematic approach to AI development, debugging skills, and ability to build production-ready testing frameworks - essential skills for transitioning into AI engineering.
+**Bottom Line**: As a senior Python/Go developer, I applied my algorithmic problem-solving skills to develop a functional AI bot with full testing infrastructure. While the current bot underperforms against advanced opponents, this project demonstrates my systematic approach to AI development, debugging skills, and ability to build production-ready testing frameworks - essential skills for transitioning into AI engineering.
 
 ## VALUE & IMPACT
 
 ### What I Built
-I created a **FUNCTIONAL AI BOT** with comprehensive testing infrastructure for the Ants AI Challenge. This demonstrates my ability to:
+I created a **FUNCTIONAL AI BOT** with full testing infrastructure for the Ants AI Challenge. This demonstrates my ability to:
 
 - **Apply Algorithmic Thinking**: Use my development background to solve complex AI optimization problems
 - **Build Production-Ready Systems**: Develop clean, maintainable code with extensive testing frameworks
@@ -18,7 +18,7 @@ This project demonstrates how my senior development experience translates to AI 
 - **Algorithmic Problem-Solving**: Applied complex algorithm design to multi-objective optimization problems
 - **System Architecture**: Designed modular, testable AI systems with clear separation of concerns
 - **Performance Optimization**: Implemented efficient data structures and algorithms for real-time decision making
-- **Code Quality**: Maintained production-level standards with comprehensive testing and documentation
+- **Code Quality**: Maintained production-level standards with full testing and documentation
 - **Systematic Development**: Built robust evaluation frameworks for iterative AI system improvement
 
 ### AI Engineering Insights
@@ -61,7 +61,7 @@ Current bot performance against example opponents:
 1. **Critical Bug Resolution**: Applied my debugging expertise to fix food collection without hill return (enabled proper ant multiplication)
 2. **Aggressive Strategy**: Implemented extreme food hunting distances (50+ tiles) and multiplication thresholds (≤20 ants) using algorithmic optimization
 3. **LeftyBot Analysis**: Applied reverse engineering skills to study and improve upon LeftyBot's wall-following strategy
-4. **Testing Infrastructure**: Built comprehensive Makefile and testing framework for systematic evaluation
+4. **Testing Infrastructure**: Built full Makefile and testing framework for systematic evaluation
 5. **Strategic Combat**: Added intelligent enemy targeting with advantage-based decision making using conditional logic
 
 **Current Status**: Bot is functional but underperforming against advanced opponents. This represents a solid foundation for further development and demonstrates my systematic approach to AI problem-solving.
@@ -87,7 +87,7 @@ Current bot performance against example opponents:
 - **System Debugging**: Used my debugging expertise to identify and fix critical performance issues
 - **Performance Optimization**: Applied my experience with high-performance systems to optimize AI behavior
 - **Code Architecture**: Used software design patterns to create maintainable AI strategy code
-- **Testing & Validation**: Applied my QA experience to build comprehensive testing frameworks
+- **Testing & Validation**: Applied my QA experience to build full testing frameworks
 
 ### Technical Implementation Highlights
 
@@ -179,7 +179,7 @@ make docker-test
 
 #### Test Suite
 ```sh
-./scripts/test_suite.sh     # Comprehensive test suite with reporting
+./scripts/test_suite.sh     # full test suite with reporting
 ```
 
 #### Benchmark Suite
@@ -208,7 +208,7 @@ PYTHONPATH=. python3 src/tools/playgame.py \
 - **Game logs**: Saved in `game_logs/` directory
 - **Replay files**: `.replay` files for visualization
 - **Benchmark reports**: Detailed performance metrics in `benchmark_results/`
-- **Test reports**: Comprehensive test results in `test_report.txt`
+- **Test reports**: full test results in `test_report.txt`
 
 ### Visualization
 

@@ -428,9 +428,9 @@ stats-quick:
 	@echo "Running quick statistical analysis..."
 	@$(MAKE) stats GAMES=5 TURNS=500
 
-# Comprehensive statistical analysis (20 games, 2000 turns)
-stats-comprehensive:
-	@echo "Running comprehensive statistical analysis..."
+# full statistical analysis (20 games, 2000 turns)
+stats-full:
+	@echo "Running full statistical analysis..."
 	@$(MAKE) stats-json GAMES=20 TURNS=2000
 
 # Run parallel statistical analysis with customizable parameters

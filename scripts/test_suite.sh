@@ -1,5 +1,5 @@
 #!/bin/bash
-# Comprehensive test suite for AntsAIBot
+# full test suite for AntsAIBot
 # Runs multiple test scenarios and generates a report
 
 set -e
