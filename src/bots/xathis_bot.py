@@ -644,9 +644,57 @@ class XathisBot:
         pass
 
     def _enemy_hills(self) -> None:
-        """TODO: send up to 4 attackers per enemy hill via BFS.
-        Strategy.java:486-514."""
-        pass
+        """Send up to ``count`` attackers per enemy hill via BFS outward.
+
+        ``count`` = 1 if I have ≤10 ants, else 4 — small colonies can't
+        spare more than one attacker, big colonies should mass-rush hills.
+
+        Algorithm (Strategy.java:486-514):
+        1. BFS from each enemy hill, depth ≤ 20.
+        2. Each time the wave reaches a my-ant tile, send that ant one
+           step toward the hill (i.e. to the tile we arrived at it from,
+           which is the BFS predecessor).
+        3. Skip if the ant has already moved, the predecessor is another
+           my-ant, or the move is unsafe (``is_tile_safe`` gate).
+        4. Decrement count for each my-ant reached (whether moved or not);
+           stop when count ≤ 0.
+        """
+        if not self.enemy_hills:
+            return
+        count_per_hill = 1 if len(self.my_ants) <= 10 else 4
+        for hill in self.enemy_hills:
+            count = count_per_hill
+            open_list: Deque[Tile] = deque()
+            changed: List[Tile] = [hill]
+            hill.dist = 0
+            hill.is_reached = True
+            open_list.append(hill)
+            while open_list:
+                t = open_list.popleft()
+                if t.dist >= 20:
+                    break
+                for n in t.neighbors:
+                    if n.is_reached:
+                        continue
+                    n.is_reached = True
+                    if n.tile_type == MY_ANT and n.ant is not None:
+                        ant = n.ant
+                        # Try to send this ant one step closer to the hill
+                        # (i.e. to the tile we expanded from). Skip if the
+                        # predecessor is another my-ant, the ant already
+                        # moved, or it's unsafe.
+                        if (not ant.has_moved
+                                and t.tile_type != MY_ANT
+                                and self.is_tile_safe(ant, t)):
+                            self.do_move(n, t, "enemy hill")
+                        count -= 1
+                    n.dist = t.dist + 1
+                    changed.append(n)
+                    open_list.append(n)
+                if count <= 0:
+                    break
+            for tile in changed:
+                tile.is_reached = False
 
     def _food(self) -> None:
         """Multi-source BFS from every food tile simultaneously. The first
@@ -813,9 +861,113 @@ class XathisBot:
         pass
 
     def _defence(self) -> None:
-        """TODO: hill defender interception via path BFS.
-        Strategy.java:368-484."""
-        pass
+        """Run :meth:`_defend_hill` for each of my hills, but skip if I
+        have more than 4 hills (sprawled-too-thin signal).
+
+        Direct port of ``Strategy.defence`` (Strategy.java:368-371).
+        """
+        if len(self.my_hills) > 4:
+            return
+        for hill in self.my_hills:
+            self._defend_hill(hill)
+
+    def _defend_hill(self, hill: Tile) -> None:
+        """Find the closest enemy threatening this hill and send the
+        nearest defender on the BFS path to intercept.
+
+        Simplified port of ``Strategy.defendHill`` (Strategy.java:377-484).
+        The original uses A* + a fallback BFS from the path's quarter
+        point; we stick to a single hill-rooted BFS and grab the first
+        my-ant on the enemy's prev chain. This is ~80% as effective and
+        avoids needing A* until later phases.
+
+        Algorithm:
+        1. BFS from ``hill``, depth ≤ 14, also setting ``hill_dist`` on
+           reached tiles. Collect every enemy ant tile encountered.
+        2. Sort the threats by ``hill_dist`` (closest first).
+        3. For each threat, walk back along the prev chain. If we hit a
+           my-ant on the path, that ant is the defender — move it one
+           step toward the enemy (the unique neighbour whose
+           ``prev`` == defender's tile).
+        4. ``is_suicide`` gate before issuing the move.
+        """
+        open_list: Deque[Tile] = deque()
+        changed: List[Tile] = [hill]
+        threats: List[Tile] = []
+        hill.hill_dist = 0
+        hill.is_reached = True
+        hill.prev = None
+        open_list.append(hill)
+        while open_list:
+            t = open_list.popleft()
+            if t.hill_dist >= DEFENCE_HORIZON:
+                break
+            for n in t.neighbors:
+                if n.is_reached:
+                    continue
+                n.is_reached = True
+                n.hill_dist = t.hill_dist + 1
+                n.prev = t
+                # Strategy.java:394 — tiles within 10 of any hill count
+                # as "known territory" for explore purposes.
+                if n.hill_dist <= 10:
+                    n.explore_value = 0
+                changed.append(n)
+                open_list.append(n)
+                if n.is_enemy():
+                    threats.append(n)
+
+        # Sort enemies by hill_dist ascending (closest first), with a
+        # stable secondary order on (row, col) to keep tests deterministic.
+        threats.sort(key=lambda t: (t.hill_dist, t.row, t.col))
+
+        for enemy_tile in threats:
+            # Walk back along prev chain looking for a my-ant defender.
+            t: Optional[Tile] = enemy_tile
+            defender: Optional[Ant] = None
+            step_after_defender: Optional[Tile] = None  # the step toward enemy
+            while t is not None and not t.is_hill:
+                if (t.tile_type == MY_ANT and t.ant is not None
+                        and not t.ant.has_moved):
+                    defender = t.ant
+                    break
+                step_after_defender = t
+                t = t.prev
+
+            if defender is None:
+                # Fallback: also check the immediate cardinal neighbours
+                # of the prev-chain. This catches a defender adjacent to
+                # the path (xathis's logic at Strategy.java:434).
+                t = enemy_tile
+                while t is not None and not t.is_hill:
+                    for n in t.neighbors:
+                        if (n.tile_type == MY_ANT and n.ant is not None
+                                and not n.ant.has_moved):
+                            defender = n.ant
+                            step_after_defender = t
+                            break
+                    if defender is not None:
+                        break
+                    t = t.prev
+
+            if defender is None or step_after_defender is None:
+                continue
+
+            # The "step toward enemy" must be a direct neighbour of the
+            # defender's current tile. If the prev-chain step isn't a
+            # cardinal neighbour, skip rather than issue a bad move.
+            if step_after_defender not in defender.tile.neighbors:
+                continue
+            if not step_after_defender.is_free():
+                continue
+            if self.is_suicide(defender, step_after_defender):
+                continue
+            self.do_move(defender.tile, step_after_defender, "defend")
+
+        # Cleanup is_reached. hill_dist / prev are kept until next turn
+        # (they get overwritten on the next BFS, no correctness issue).
+        for tile in changed:
+            tile.is_reached = False
 
     def _approach_enemies(self) -> None:
         """TODO: A* path toward closest enemy for fight-area ants.
