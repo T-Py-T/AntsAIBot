@@ -18,8 +18,8 @@ COPY pyproject.toml README.md ./
 # the container. Analysis tooling (pandas/numpy/scipy/matplotlib/seaborn)
 # is intentionally NOT installed here to keep the runtime image small;
 # install with [analysis] locally for those workflows.
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir ".[test]"
+RUN pip install --no-cache-dir --root-user-action=ignore --upgrade pip \
+    && pip install --no-cache-dir --root-user-action=ignore ".[test]"
 
 # Now copy the rest of the source tree.
 COPY . .
