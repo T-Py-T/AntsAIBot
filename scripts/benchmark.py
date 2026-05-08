@@ -289,12 +289,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     log_dir = (REPO_ROOT / args.log_dir).resolve()
     log_dir.mkdir(parents=True, exist_ok=True)
 
+    xathis = "{0} src/bots/xathis_bot.py".format(sys.executable)
+
     matchups = [
         ("vs_RandomBot", [bot, f"{sample}/RandomBot.py"], map_file),
         ("vs_HoldBot",   [bot, f"{sample}/HoldBot.py"],   map_file),
         ("vs_HunterBot", [bot, f"{sample}/HunterBot.py"], map_file),
         ("vs_GreedyBot", [bot, f"{sample}/GreedyBot.py"], map_file),
         ("vs_LeftyBot",  [bot, f"{sample}/LeftyBot.py"],  map_file),
+        # The "final boss": our port of the AI Challenge 2011 winner.
+        # Beating xathis_bot is the long-term goal for any ML successor.
+        ("vs_XathisBot", [bot, xathis], map_file),
         ("Four_Player",  [bot, f"{sample}/RandomBot.py",
                           f"{sample}/HunterBot.py", f"{sample}/GreedyBot.py"], map_4p),
     ]
