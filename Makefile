@@ -1,7 +1,7 @@
 # AntsAIBot Testing Makefile
 # Provides easy commands for testing your bot against various opponents
 
-.PHONY: help install install-uv pytest pytest-quick pytest-coverage test test-quick test-full test-against-samples test-against-random test-against-hunter test-against-greedy test-against-lefty test-self test-visualize benchmark clean docker-build docker-test docker-run stats stats-json stats-parallel
+.PHONY: help install install-uv pytest pytest-quick pytest-coverage test test-quick test-full test-against-samples test-against-random test-against-hunter test-against-greedy test-against-lefty test-self test-visualize benchmark benchmark-quick clean docker-build docker-test docker-run stats stats-json stats-parallel
 
 # Default target
 help:
@@ -512,10 +512,19 @@ analyze:
 	@echo "Analyzing results..."
 	uv run python scripts/analyze_results.py --file parallel_statistics.json
 
-# Run the full benchmark suite (delegates to scripts/benchmark.sh)
+# Run the full benchmark suite (delegates to scripts/benchmark.py).
+# The legacy bash version (scripts/benchmark.sh) had a broken score-parsing
+# path that reported every game as a draw; the Python rewrite parses the
+# stable RESULT line emitted by playgame.py.
 benchmark:
-	@echo "Running benchmark suite..."
-	@bash scripts/benchmark.sh
+	@echo "Running benchmark suite (5 games / matchup, 1000-turn cap)..."
+	@python3 scripts/benchmark.py
+
+# Fast smoke-benchmark — 2 games per matchup, 200-turn cap (~30s total).
+# Useful in CI / sanity checks.
+benchmark-quick:
+	@echo "Running quick benchmark (2 games / matchup, 200-turn cap)..."
+	@python3 scripts/benchmark.py --quick
 
 # Validate raw against fast output
 validate:
