@@ -761,9 +761,46 @@ class XathisBot:
         return False
 
     def _init_explore(self) -> None:
-        """TODO: reset exploreValue for tiles within 10 steps of an ant.
-        Strategy.java:891-916."""
-        pass
+        """Multi-source BFS from every my-ant; zero ``explore_value`` for
+        every tile within 10 steps of any of my ants.
+
+        Tiles outside that radius keep their per-turn-aged ``explore_value``
+        (incremented in :meth:`_init_turn`), so they look "stale" to the
+        :meth:`_explore` BFS and pull ants outward.
+
+        Direct port of ``Strategy.initExplore`` (Strategy.java:891–916).
+        """
+        if not self.my_ants:
+            return
+        open_list: Deque[Tile] = deque()
+        changed: List[Tile] = []
+        for ant in self.my_ants:
+            t = ant.tile
+            if t.is_reached:
+                continue
+            t.dist = 0
+            t.is_reached = True
+            t.start_tile = t
+            changed.append(t)
+            open_list.append(t)
+        # Java uses `if (tile.dist > 10) break` — process dist 0..10 inclusive.
+        horizon = EXPLORE_BFS_HORIZON - 1  # = 10
+        while open_list:
+            t = open_list.popleft()
+            if t.dist > horizon:
+                break
+            t.explore_value = 0
+            for n in t.neighbors:
+                if n.is_reached:
+                    continue
+                n.is_reached = True
+                n.prev = t
+                n.dist = t.dist + 1
+                n.start_tile = t.start_tile
+                changed.append(n)
+                open_list.append(n)
+        for t in changed:
+            t.is_reached = False
 
     def _create_areas(self) -> None:
         """TODO: territory flood-fill + border tile detection.
@@ -801,9 +838,114 @@ class XathisBot:
         pass
 
     def _explore(self) -> None:
-        """TODO: 11-step BFS, move toward highest exploreValue frontier.
-        Strategy.java:917-988."""
-        pass
+        """For each idle, non-indirectly-dangered ant, run :meth:`_explore_ant`
+        which picks the cardinal step that pulls in the most "fog" value
+        from the 10-step horizon.
+
+        Direct port of ``Strategy.explore`` (Strategy.java:917–922).
+        """
+        for ant in self.my_ants:
+            if ant.has_moved or ant.is_indirectly_dangered:
+                continue
+            self._explore_ant(ant)
+
+    def _explore_ant(self, ant: Ant) -> bool:
+        """Diffusion-style frontier scoring around a single ant.
+
+        Algorithm (Strategy.java:923–988):
+
+        1. BFS from the ant's tile, depth ≤ 10.
+        2. The 4 cardinal neighbours are the candidate "first steps". For
+           each tile reached on a *shortest* path, record which first
+           steps lead to it (``prev_firsts`` — multiple ties accumulate).
+        3. When a tile is dequeued at the horizon (dist > 10), do **not**
+           expand it. Instead distribute its accumulated ``explore_value``
+           equally to every first step that owns a shortest path to it.
+        4. The first step with the highest summed value wins. Ties go to
+           whichever entry was inserted first (i.e. dict order — that's
+           the cardinal order ``n``/``e``/``s``/``w``).
+        5. The destination must be ``is_free()`` AND not a hill (avoid
+           overwriting food/ant tiles or stalling on a friendly hill).
+        6. After picking the destination, zero out the ``explore_value``
+           of every frontier tile that the chosen first step "owns", so
+           subsequent ants pursue different frontiers.
+
+        Returns True if a move was issued, False otherwise (caller may
+        fall through to other phases — ``_distribute`` etc.).
+        """
+        ant_tile = ant.tile
+        # values[first_step_tile] = cumulative explore_value from frontier.
+        # Insertion order matters because we tie-break by it.
+        values: Dict[Tile, int] = {}
+        open_list: Deque[Tile] = deque()
+        changed: List[Tile] = [ant_tile]
+        ant_tile.is_reached = True
+        ant_tile.dist = 0
+
+        for n in ant_tile.neighbors:
+            values[n] = 0
+            n.dist = 1
+            n.is_reached = True
+            n.prev_firsts.add(n)
+            changed.append(n)
+            open_list.append(n)
+
+        horizon = EXPLORE_BFS_HORIZON - 1  # = 10
+        while open_list:
+            t = open_list.popleft()
+            if t.dist > horizon:
+                # Frontier tile: distribute its exploreValue to each
+                # first-step that has a shortest path to it.
+                ev = t.explore_value
+                if ev:
+                    for first in t.prev_firsts:
+                        if first in values:
+                            values[first] += ev
+                continue
+            for n in t.neighbors:
+                if n.is_reached:
+                    # Equal-distance tie: this neighbour was reached via
+                    # a different first-step on the same depth, so unify
+                    # the prev_firsts sets.
+                    if n.dist == t.dist + 1:
+                        n.prev_firsts.update(t.prev_firsts)
+                    continue
+                n.is_reached = True
+                n.prev = t
+                n.dist = t.dist + 1
+                n.prev_firsts.update(t.prev_firsts)
+                changed.append(n)
+                open_list.append(n)
+
+        # Pick the best free, non-hill first step.
+        best_value = 0
+        best_dest: Optional[Tile] = None
+        for tile, v in values.items():
+            if v > best_value and tile.is_free() and not tile.is_hill:
+                best_value = v
+                best_dest = tile
+
+        if best_dest is None or best_value == 0:
+            for t in changed:
+                t.is_reached = False
+                t.prev_firsts.clear()
+            return False
+
+        # Zero out frontier explore_values that the chosen first-step owns,
+        # so other ants don't all swarm the same fog blob.
+        for t in changed:
+            if t.dist > horizon and best_dest in t.prev_firsts:
+                t.explore_value = 0
+            t.is_reached = False
+            t.prev_firsts.clear()
+
+        # Final safety gate: don't walk into death. The Java doesn't gate
+        # explore (it relies on `isIndirectlyDangered` excluding ants in
+        # combat range), but a belt-and-braces check costs nothing.
+        if self.is_suicide(ant, best_dest):
+            return False
+        self.do_move(ant_tile, best_dest, "explore")
+        return True
 
     def _do_missions(self) -> None:
         """TODO: A* each mission ant toward its target tile.
