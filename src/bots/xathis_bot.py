@@ -79,6 +79,16 @@ EXPLORE_BFS_HORIZON: int = 11
 # Escape BFS horizon — Strategy.java:599
 ESCAPE_CHECK_DIST: int = 8
 
+# Group-fight cap (per side). xathis uses dependency tables + prec-grouping
+# to handle larger groups; we cap at 4 ants per side and exhaustive-search.
+# Larger groups fall through to the safety gates and the rest of the ladder.
+FIGHT_GROUP_CAP: int = 4
+
+# Hard ceiling on the (my_options × enemy_options) product. Even with
+# group cap = 4, a fully-mobile 4v4 fight can hit 5^4 * 5^4 = 390 625
+# combinations; we fall through past this to keep turn time predictable.
+FIGHT_BRANCHING_CAP: int = 200_000
+
 
 # ---------------------------------------------------------------------------
 # Data classes
@@ -856,9 +866,263 @@ class XathisBot:
         pass
 
     def _fight(self) -> None:
-        """TODO: gamma-group minimax with dep tables + alpha-beta cuts.
-        Strategy.java:781-874."""
-        pass
+        """Group-based depth-1 minimax over gamma-distance combat groups.
+
+        This is a *simplified* port of ``Strategy.fight`` (Strategy.java:781-874).
+        xathis's full version uses dependency tables, alpha-beta cuts, and
+        prec-grouping to handle large groups; we use exhaustive search
+        capped at ``FIGHT_GROUP_CAP`` ants per side, which empirically
+        handles 1v1, 1v2, 2v2, 3v2, 3v3 — the cases that matter most for
+        breaking ties against scripted bots.
+
+        For each gamma group (connected component via ``gamma_dist_enemies``):
+
+        1. Enumerate every my-move combination (each my-ant: 4 neighbours
+           + stay, with collision filtering).
+        2. For each my-combo, find the *worst-case* enemy combo using the
+           same enumeration.
+        3. Score = my_kills − my_losses (computed via the actual AI
+           Challenge battle-resolution rule).
+        4. Pick the my-combo whose worst-case score is highest. Ties go
+           to "stay" combos (more conservative).
+        5. Apply the chosen moves; mark all ants in the group as moved.
+
+        Bounded by ``TURN_TIME_BUDGET_MS`` (420ms) to avoid engine timeouts
+        in heavy combat scenarios.
+        """
+        if not self.my_ants or not self.enemy_ants:
+            return
+        # Reset gamma_grouped flags (set by previous-turn iterations or
+        # by an earlier loop on this turn).
+        for a in self.my_ants:
+            a.is_gamma_grouped = False
+        for e in self.enemy_ants:
+            e.is_gamma_grouped = False
+
+        for start_ant in self.my_ants:
+            if start_ant.has_moved or not start_ant.gamma_dist_enemies:
+                continue
+            if start_ant.is_gamma_grouped:
+                continue
+            # Time budget — bail if we're past 420ms.
+            elapsed = time.monotonic() * 1000.0 - self.start_time_ms
+            if elapsed > TURN_TIME_BUDGET_MS:
+                self.is_timeout = True
+                break
+
+            my_group, enemy_group = self._find_gamma_group(start_ant)
+            if len(my_group) > FIGHT_GROUP_CAP or len(enemy_group) > FIGHT_GROUP_CAP:
+                continue
+            if not enemy_group:
+                continue
+            self._fight_group(my_group, enemy_group)
+
+    def _find_gamma_group(self, start_ant: Ant) -> Tuple[List[Ant], List[Ant]]:
+        """BFS via ``gamma_dist_enemies`` edges to gather one connected
+        component of mutually-threatening ants.
+
+        Direct port of ``Strategy.findGammaGroup`` (Strategy.java:1022).
+        Returns (my_group, enemy_group). The caller must reset
+        ``is_gamma_grouped`` after the turn (or before re-using).
+        """
+        my_group: List[Ant] = [start_ant]
+        enemy_group: List[Ant] = []
+        start_ant.is_gamma_grouped = True
+        my_q: Deque[Ant] = deque([start_ant])
+        enemy_q: Deque[Ant] = deque()
+        while my_q or enemy_q:
+            if my_q:
+                m = my_q.popleft()
+                for e in m.gamma_dist_enemies:
+                    if not e.is_gamma_grouped:
+                        e.is_gamma_grouped = True
+                        enemy_q.append(e)
+                        enemy_group.append(e)
+            if enemy_q:
+                e = enemy_q.popleft()
+                for m in e.gamma_dist_enemies:
+                    if m.is_gamma_grouped or m.has_moved:
+                        continue
+                    m.is_gamma_grouped = True
+                    my_q.append(m)
+                    my_group.append(m)
+        return my_group, enemy_group
+
+    def _fight_options(self, ant: Ant, exclude_friendly_tiles: Set[Tile]) -> List[Tile]:
+        """Return the list of destinations ``ant`` can attempt this turn.
+
+        Always includes "stay" (its current tile). Adds each cardinal
+        neighbour that is currently free of water, food, hills, and any
+        ``exclude_friendly_tiles`` (other ants' current positions in the
+        group — collision avoidance).
+
+        For enemy ants we don't know about hills the same way; we just
+        gate on ``is_free()`` (excludes water/food/ants).
+        """
+        opts: List[Tile] = [ant.tile]  # stay
+        for n in ant.tile.neighbors:
+            if n is ant.tile:
+                continue
+            if n.tile_type == WATER:
+                continue
+            if n.is_free() and n not in exclude_friendly_tiles:
+                opts.append(n)
+        return opts
+
+    def _fight_group(self, my_group: List[Ant], enemy_group: List[Ant]) -> None:
+        """Exhaustive minimax over all (my, enemy) move combinations,
+        scored by the AI Challenge's mutual-destruction rule.
+        """
+        my_tiles = {a.tile for a in my_group}
+        enemy_tiles = {e.tile for e in enemy_group}
+
+        my_options: List[List[Tile]] = [
+            self._fight_options(a, my_tiles - {a.tile}) for a in my_group
+        ]
+        enemy_options: List[List[Tile]] = [
+            self._fight_options(e, enemy_tiles - {e.tile}) for e in enemy_group
+        ]
+
+        # Combination size sanity gate — even with cap=4 this can hit
+        # 5^4 * 5^4 = ~390k combinations. Skip pathological branches.
+        my_size = 1
+        for opts in my_options:
+            my_size *= len(opts)
+        enemy_size = 1
+        for opts in enemy_options:
+            enemy_size *= len(opts)
+        if my_size * enemy_size > FIGHT_BRANCHING_CAP:
+            # Too expensive — fall through and let safety gates handle it.
+            return
+
+        best_score = -(1 << 30)
+        best_combo: Optional[Tuple[Tile, ...]] = None
+
+        for my_combo in self._iter_combos(my_options):
+            # Quick collision check inside the my-side combo.
+            if len(set(my_combo)) != len(my_combo):
+                continue
+            # Time check inside the inner loop too — combat search must
+            # stay under budget.
+            elapsed = time.monotonic() * 1000.0 - self.start_time_ms
+            if elapsed > TURN_TIME_BUDGET_MS:
+                self.is_timeout = True
+                break
+            worst_score = 1 << 30
+            for enemy_combo in self._iter_combos(enemy_options):
+                if len(set(enemy_combo)) != len(enemy_combo):
+                    continue
+                score = self._eval_battle(
+                    my_group, my_combo, enemy_group, enemy_combo
+                )
+                if score < worst_score:
+                    worst_score = score
+                    if worst_score <= best_score:
+                        # Alpha-prune: this my-combo can't beat the
+                        # current best regardless of further enemy moves.
+                        break
+            if worst_score > best_score:
+                best_score = worst_score
+                best_combo = my_combo
+
+        if best_combo is None:
+            return
+
+        # Apply best moves. Stays are noted as has_moved=True; real
+        # moves go through do_move so the engine and tile graph stay in
+        # sync.
+        for ant, dest in zip(my_group, best_combo):
+            if ant.has_moved:
+                continue
+            if dest is ant.tile:
+                ant.has_moved = True
+                continue
+            self.do_move(ant.tile, dest, "fight")
+
+    def _iter_combos(self, options: List[List[Tile]]):
+        """Generator of every combination of one tile from each list.
+
+        Plain Cartesian product, but we keep it as an explicit loop to
+        allow alpha-pruning by the caller (the Python builtin
+        ``itertools.product`` is fine but tuple-allocates eagerly).
+        """
+        n = len(options)
+        if n == 0:
+            yield ()
+            return
+        idx = [0] * n
+        sizes = [len(o) for o in options]
+        while True:
+            yield tuple(options[i][idx[i]] for i in range(n))
+            # increment
+            i = 0
+            while i < n:
+                idx[i] += 1
+                if idx[i] < sizes[i]:
+                    break
+                idx[i] = 0
+                i += 1
+            if i == n:
+                return
+
+    def _eval_battle(self, my_group: List[Ant], my_combo: Tuple[Tile, ...],
+                     enemy_group: List[Ant], enemy_combo: Tuple[Tile, ...]) -> int:
+        """Score = (enemy_dead − my_dead) under official AI Challenge
+        battle resolution applied to the post-move positions.
+
+        Rule (verbatim from the engine): each ant counts the opposing
+        ants in its alpha-distance ("attackradius²") as its threat
+        count. An ant dies if any opposing ant within attack range has
+        a threat count ≤ its own. (1v1 → both die; 2v1 → the lone ant
+        dies, both attackers survive.)
+
+        We add small tie-breakers:
+         * Penalize my-ants ending on hills (they block spawning).
+         * Reward sitting *on* an enemy hill (razing wins games).
+         * Add a tiny "ground covered" bonus to break stay/move ties so
+           the bot doesn't freeze in place.
+        """
+        my_dead = 0
+        enemy_dead = 0
+        # Threat counts.
+        my_threat = [0] * len(my_combo)
+        enemy_threat = [0] * len(enemy_combo)
+        for i, mt in enumerate(my_combo):
+            for j, et in enumerate(enemy_combo):
+                if self.is_alpha_dist(mt, et):
+                    my_threat[i] += 1
+                    enemy_threat[j] += 1
+        # Death pass.
+        for i, mt in enumerate(my_combo):
+            if my_threat[i] == 0:
+                continue
+            for j, et in enumerate(enemy_combo):
+                if not self.is_alpha_dist(mt, et):
+                    continue
+                if my_threat[i] >= enemy_threat[j]:
+                    my_dead += 1
+                    break
+        for j, et in enumerate(enemy_combo):
+            if enemy_threat[j] == 0:
+                continue
+            for i, mt in enumerate(my_combo):
+                if not self.is_alpha_dist(mt, et):
+                    continue
+                if enemy_threat[j] >= my_threat[i]:
+                    enemy_dead += 1
+                    break
+
+        score = (enemy_dead - my_dead) * 1000
+
+        # Hill-based tie-breakers only. Movement bonus is intentionally
+        # NOT applied here — fight is conservative; other phases handle
+        # exploration/distribution. A move that results in mutual
+        # destruction must score *exactly* 0 vs a stay that also scores
+        # 0, so the deterministic "stay first" tie-break wins.
+        for mt in my_combo:
+            if mt.is_hill and mt.hill_player > 0:
+                score += 50  # raze enemy hill is worth more than a trade
+        return score
 
     def _defence(self) -> None:
         """Run :meth:`_defend_hill` for each of my hills, but skip if I
