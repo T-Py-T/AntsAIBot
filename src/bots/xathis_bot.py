@@ -33,7 +33,8 @@ from __future__ import annotations
 
 import sys
 import time
-from typing import Dict, List, Optional, Set, Tuple
+from collections import deque
+from typing import Deque, Dict, List, Optional, Set, Tuple
 
 # Reuse the shared helper API for stdio + map state. Constants we use:
 #   MY_ANT (0), LAND (-2), FOOD (-3), WATER (-4), UNSEEN (-5), HILL (-6)
@@ -469,19 +470,173 @@ class XathisBot:
         self._create_missions()
         self._distribute(only_near_enemy=False)
         self._clean_areas()
+        # Final fallback: ants still sitting on our hill block new spawns.
+        # This is a minimal stand-in for `distribute()` until that phase
+        # lands; without it the colony plateaus at 1–2 ants because the
+        # hill stays occupied. xathis's full distribute (Strategy.java:990)
+        # is much smarter — it spreads ants by maximizing reachable tiles.
+        self._off_hill_fallback()
+
+    def _off_hill_fallback(self) -> None:
+        """Move any my-ant that's still on a my-hill and has no orders to
+        a free, safe neighbor. Keeps the spawn pipeline unblocked until
+        the real ``distribute`` / ``explore`` phases land.
+        """
+        my_hill_set = {h for h in self.my_hills}
+        for ant in self.my_ants:
+            if ant.has_moved or ant.tile not in my_hill_set:
+                continue
+            for n in ant.tile.neighbors:
+                if n.is_free() and not n.is_hill and self.is_tile_safe(ant, n):
+                    self.do_move(ant.tile, n, "off-hill")
+                    break
 
     # ------------------------------------------------------------------
-    # Phase stubs (filled in subsequent commits)
+    # Phase: _init_turn (Strategy.java:78-202)
     # ------------------------------------------------------------------
     def _init_turn(self) -> None:
-        """TODO: dangered/indirectly-dangered flags, willStay detection,
-        gammaDistEnemies precomputation. Strategy.java:78-202."""
-        pass
+        """Per-turn precomputation: close-ant pair counts, close-enemy
+        distances, dangered/indirectly-dangered flags, gamma-distance
+        adjacency, ``willStay`` detection, ``exploreValue`` aging.
+
+        This populates the data structures every later phase reads.
+        Direct port of ``Strategy.initTurn()`` (Strategy.java:78–202).
+        """
+
+        # ---- count close own-ant pairs (numCloseOwnAnts) -------------
+        # Two of my ants are "close" if both row- and col-distance ≤ 5.
+        # Used as an aggression signal in `_fight`. O(n²) over my ants;
+        # xathis just iterates every pair.
+        my_ants = self.my_ants
+        for i, a in enumerate(my_ants):
+            for b in my_ants[i + 1:]:
+                if (self.dist_row(a.tile, b.tile) <= 5
+                        and self.dist_col(a.tile, b.tile) <= 5):
+                    a.num_close_own_ants += 1
+                    b.num_close_own_ants += 1
+
+        # ---- close-enemy distances + dangered/gamma flags -----------
+        # For each (my_ant, enemy_ant) pair within CLOSE_ENEMY_RADIUS
+        # rows AND cols, compute Euclidean² distance and populate the
+        # ant-level lookup tables that drive safety / fight / escape.
+        cer = CLOSE_ENEMY_RADIUS
+        cer2 = CLOSE_ENEMY_RADIUS2
+        for my_ant in self.my_ants:
+            close: List[Tuple[int, Ant]] = []
+            for enemy_ant in self.enemy_ants:
+                dy = self.dist_row(my_ant.tile, enemy_ant.tile)
+                if dy > cer:
+                    continue
+                dx = self.dist_col(my_ant.tile, enemy_ant.tile)
+                if dx > cer:
+                    continue
+                d2 = dy * dy + dx * dx
+                if d2 > cer2:
+                    continue
+                close.append((d2, enemy_ant))
+                # mirror onto enemy
+                enemy_ant.close_enemy_dists.append((d2, my_ant))
+                my_ant.close_enemy_dists_sum += d2
+                enemy_ant.close_enemy_dists_sum += d2
+                # gamma: dr+dc ≤ 5, except the two corner cases (0,5)/(5,0)
+                if (dx + dy <= 5
+                        and not (dx == 0 and dy == 5)
+                        and not (dy == 0 and dx == 5)):
+                    if not my_ant.is_indirectly_dangered:
+                        my_ant.is_indirectly_dangered = True
+                    my_ant.gamma_dist_enemies.append(enemy_ant)
+                    enemy_ant.gamma_dist_enemies.append(my_ant)
+                    # dangered: dr+dc ≤ 4, except (0,4)/(4,0)
+                    if (not my_ant.is_dangered
+                            and dx + dy <= 4
+                            and not (dx == 0 and dy == 4)
+                            and not (dy == 0 and dx == 4)):
+                        my_ant.is_dangered = True
+                        self.dangered_ants.append(my_ant)
+            if close:
+                close.sort(key=lambda kv: kv[0])
+                my_ant.close_enemy_dists = close
+                my_ant.closest_enemy_tile = close[0][1].tile
+
+        # Sort each enemy's close_enemy_dists too (xathis uses a TreeMap
+        # so it's always sorted). We only need the head for combat.
+        for enemy_ant in self.enemy_ants:
+            if enemy_ant.close_enemy_dists:
+                enemy_ant.close_enemy_dists.sort(key=lambda kv: kv[0])
+
+        # ---- enemy-ant detached check + ordering --------------------
+        # An enemy is "detached" if no other enemy is within (5,5) of it.
+        # Used by attackDetachedEnemies. O(n²) again.
+        for i, a in enumerate(self.enemy_ants):
+            for b in self.enemy_ants[i + 1:]:
+                if (self.dist_row(a.tile, b.tile) <= 5
+                        and self.dist_col(a.tile, b.tile) <= 5):
+                    a.is_detached = False
+                    b.is_detached = False
+
+        # ---- exploreValue aging + isBorder reset --------------------
+        # Every tile's explore_value increments by 1 each turn; the
+        # explore phase later resets it to 0 for tiles within reach.
+        for row in self.tiles:
+            for tile in row:
+                tile.explore_value += 1
+                tile.is_border = False
+                if tile.ant is None:
+                    tile.stay_value = -1
+
+        # ---- willStay detection -------------------------------------
+        # If an enemy ant has had the same neighborhood for ≥5 turns we
+        # treat it as a permanent obstacle — saves combat search depth.
+        for enemy in self.enemy_ants:
+            curr_stay = 0
+            for i, n in enumerate(enemy.tile.neighbors):
+                if n.is_enemy():
+                    curr_stay |= 1 << i
+            tile = enemy.tile
+            if tile.stay_value == curr_stay:
+                tile.stay_turn_count += 1
+                if tile.stay_turn_count >= 5:
+                    enemy.will_stay = True
+            else:
+                tile.stay_value = curr_stay
+                tile.stay_turn_count = 0
+                enemy.will_stay = False
 
     def _calc_num_close_enemies(self) -> None:
-        """TODO: BFS from each enemy ant to count close own ants.
-        Strategy.java:224-254."""
-        pass
+        """BFS up to dist 12 from every enemy ant, populating each my-ant's
+        ``num_close_enemies`` and ``closest_enemy``. Used by combat
+        approach logic and ``escape``.
+
+        Direct port of ``Strategy.calcNumCloseEnemies`` (Strategy.java:224).
+        """
+        for enemy in self.enemy_ants:
+            if not enemy.close_enemy_dists:
+                continue
+            open_list: Deque[Tile] = deque()
+            changed: List[Tile] = []
+            enemy_tile = enemy.tile
+            open_list.append(enemy_tile)
+            enemy_tile.dist = 0
+            enemy_tile.is_reached = True
+            changed.append(enemy_tile)
+            while open_list:
+                t = open_list.popleft()
+                if t.dist >= 12:
+                    break
+                for n in t.neighbors:
+                    if n.is_reached:
+                        continue
+                    n.is_reached = True
+                    n.dist = t.dist + 1
+                    changed.append(n)
+                    open_list.append(n)
+                    if n.tile_type == MY_ANT and n.ant is not None:
+                        n.ant.num_close_enemies += 1
+                        if n.ant.closest_enemy_dist > n.dist:
+                            n.ant.closest_enemy = enemy
+                            n.ant.closest_enemy_dist = n.dist
+            for t in changed:
+                t.is_reached = False
 
     def _init_missions(self) -> None:
         """TODO: re-attach ongoing missions to current ants.
@@ -494,9 +649,116 @@ class XathisBot:
         pass
 
     def _food(self) -> None:
-        """TODO: multi-source BFS from food tiles, first ant claims.
-        Strategy.java:516-585."""
-        pass
+        """Multi-source BFS from every food tile simultaneously. The first
+        of my ants the wave reaches claims that food and moves toward it,
+        gated by a suicide check (and a backup check if unsafe).
+
+        Direct port of ``Strategy.food`` (Strategy.java:516–585) — the
+        single biggest reason xathis was so efficient at growing his colony.
+        """
+        if not self.foods:
+            return
+
+        # ``source[tile]`` = which food this BFS branch came from.
+        # ``enemy_near[food]`` flags food sources that have an enemy at
+        # dist ≤ 2 — those get abandoned (don't fight to the death over
+        # one piece of food).
+        enemy_near: Dict[Tile, bool] = {}
+        # Food sources we've already abandoned/claimed; tiles whose
+        # ``source`` is in here get skipped on dequeue.
+        dead_sources: Set[Tile] = set()
+
+        open_list: Deque[Tile] = deque()
+        changed: List[Tile] = []
+        for food in self.foods:
+            food.dist = 0
+            food.is_reached = True
+            food.source = food
+            food.prev = None
+            enemy_near[food] = False
+            changed.append(food)
+            open_list.append(food)
+
+        while open_list:
+            t = open_list.popleft()
+            src = t.source
+            if src is None or src in dead_sources:
+                continue
+
+            # Enemy-near-food early-warning: if the wave reaches an enemy
+            # ant within dist 2 of the food, mark that food source as
+            # contested.
+            if t.dist <= 2 and t.is_enemy():
+                enemy_near[src] = True
+
+            # If we're past the contested zone and the food is contested,
+            # abandon it entirely.
+            if t.dist > 2 and enemy_near.get(src, False):
+                dead_sources.add(src)
+                continue
+
+            # If the wave reached one of my ants, that ant claims the food.
+            if (t.tile_type == MY_ANT and t.ant is not None and not t.ant.has_moved
+                    and t.prev is not None
+                    and t.prev.tile_type != MY_ANT):
+                ant = t.ant
+                # If the food is adjacent (prev is the food itself), just
+                # stay put and let the ant pick it up next turn.
+                if t.prev is src:
+                    ant.has_moved = True
+                elif not self.is_suicide(ant, t.prev):
+                    enemy_block = self.is_tile_safe2(ant, t.prev)
+                    if enemy_block is None:
+                        # safe move; just go
+                        self.do_move(t, t.prev, "food")
+                    else:
+                        # not safe — only proceed if we have backup
+                        if self._food_has_backup(src, ant, enemy_block):
+                            self.do_move(t, t.prev, "food")
+                # food source consumed regardless of whether we managed
+                # to actually move (avoids two ants chasing the same food).
+                dead_sources.add(src)
+                continue
+
+            # Otherwise expand if still within food horizon.
+            if t.dist < FOOD_BFS_HORIZON:
+                next_dist = t.dist + 1
+                for n in t.neighbors:
+                    if n.is_reached:
+                        continue
+                    n.is_reached = True
+                    n.prev = t
+                    n.dist = next_dist
+                    n.source = src
+                    changed.append(n)
+                    open_list.append(n)
+
+        for t in changed:
+            t.is_reached = False
+            t.source = None
+
+    def _food_has_backup(self, food: Tile, claimer: Ant, blocker: Ant) -> bool:
+        """Return True if I have a my-ant near the food source that's
+        *not* the claimer and *not* the blocking enemy.
+
+        Mirrors the ``iHaveBackup`` block inside ``Strategy.food``
+        (Strategy.java:548–560). The logic is "I can sacrifice the
+        closer ant only if a follow-up ant is en route."
+        """
+        # Find the closest 3 ants (any owner) within dist 8 of the food.
+        candidates: List[Tuple[int, Ant]] = []
+        for ant in self.my_ants + self.enemy_ants:
+            d = self.dist(food, ant.tile)
+            if d < 8:
+                candidates.append((d, ant))
+                if len(candidates) >= 3:
+                    break
+        candidates.sort(key=lambda kv: kv[0])
+        for _, ant in candidates:
+            if ant is claimer or ant is blocker:
+                continue
+            return ant.tile.tile_type == MY_ANT
+        return False
 
     def _init_explore(self) -> None:
         """TODO: reset exploreValue for tiles within 10 steps of an ant.
@@ -557,6 +819,86 @@ class XathisBot:
         """TODO: reset is_in_my_area flags for next turn.
         Strategy.java:773-777."""
         pass
+
+    # ------------------------------------------------------------------
+    # Safety gates (Strategy.java:1673-1724)
+    # ------------------------------------------------------------------
+    def is_tile_safe(self, ant: Ant, dest: Tile) -> bool:
+        """True if moving ``ant`` to ``dest`` *cannot* result in attack
+        next turn from any enemy in ``ant.gamma_dist_enemies``.
+
+        For ``willStay`` enemies: only check their current position.
+        For mobile enemies: dest must not be in beta of the enemy's
+        current position; if the enemy has all 4 free neighbors, dest
+        being in beta is automatic death; otherwise check each neighbor.
+
+        Direct port of ``Strategy.isTileSafe`` (Strategy.java:1673).
+        """
+        for enemy in ant.gamma_dist_enemies:
+            if enemy.will_stay:
+                if self.is_alpha_dist(enemy.tile, dest):
+                    return False
+                continue
+            if not self.is_beta_dist(enemy.tile, dest):
+                continue
+            if len(enemy.tile.neighbors) == 4:
+                return False
+            for n in enemy.tile.neighbors:
+                if self.is_alpha_dist(n, dest):
+                    return False
+        return True
+
+    def is_tile_safe2(self, ant: Ant, dest: Tile) -> Optional[Ant]:
+        """Like :meth:`is_tile_safe`, but returns the *first* enemy that
+        makes the destination unsafe (or None if safe). Used by
+        :meth:`_food` to decide whether backup support is warranted.
+
+        Direct port of ``Strategy.isTileSafe2`` (Strategy.java:1688).
+        """
+        for enemy in ant.gamma_dist_enemies:
+            if enemy.will_stay:
+                if self.is_alpha_dist(enemy.tile, dest):
+                    return enemy
+                continue
+            if not self.is_beta_dist(enemy.tile, dest):
+                continue
+            if len(enemy.tile.neighbors) == 4:
+                return enemy
+            for n in enemy.tile.neighbors:
+                if self.is_alpha_dist(n, dest):
+                    return enemy
+        return None
+
+    def is_suicide(self, ant: Ant, dest: Tile) -> bool:
+        """Stronger check than :meth:`is_tile_safe`: a move is suicide
+        only if *two or more* enemies threaten the destination
+        simultaneously (a 1-on-1 trade isn't necessarily a loss — it's
+        a wash if our ant is supported).
+
+        Direct port of ``Strategy.isSuicide`` (Strategy.java:1702).
+        """
+        dangered = False
+        for enemy in ant.gamma_dist_enemies:
+            if enemy.will_stay:
+                if self.is_alpha_dist(enemy.tile, dest):
+                    if dangered:
+                        return True
+                    dangered = True
+                continue
+            if not self.is_beta_dist(enemy.tile, dest):
+                continue
+            if len(enemy.tile.neighbors) == 4:
+                if dangered:
+                    return True
+                dangered = True
+            else:
+                for n in enemy.tile.neighbors:
+                    if self.is_alpha_dist(n, dest):
+                        if dangered:
+                            return True
+                        dangered = True
+                        break
+        return False
 
     # ------------------------------------------------------------------
     # Move issuing
