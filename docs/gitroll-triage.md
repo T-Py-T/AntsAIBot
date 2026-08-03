@@ -11,6 +11,9 @@ findings are counted once across those two issue bodies.
 - Cognitive-complexity rewrites in the game engine, bot strategy, and seeded map
   algorithms are not performed without golden replay/map equivalence fixtures.
   Those rewrites can change game outcomes despite looking structural.
+- Standalone map-generator prototypes receive safe syntax, naming, and data-
+  structure cleanup. Seed-sensitive control flow, unfinished algorithms, CLI
+  output, and default-package launch contracts remain explicitly dispositioned.
 - `docs/reference/xathis/` is the preserved source of the 2011 winning bot. It is
   evidence for the Python port, not a maintained Java application.
 - `src/sample_bots/` contains protocol opponents and deliberate failure fixtures
@@ -25,8 +28,8 @@ findings are counted once across those two issue bodies.
 
 | Disposition | Findings | Result |
 | --- | ---: | --- |
-| Corrected in code | 164 | Correctness defects and safe smells removed; tests updated where interfaces changed. |
-| Explicit engineering deferral | 159 | Seed/game-sensitive complexity or untested legacy utility behavior; rationale recorded per issue below. |
+| Corrected in code | 251 | Correctness defects and safe smells removed; tests updated where interfaces changed. |
+| Explicit engineering deferral | 72 | Seed/game-sensitive complexity or unfinished utility behavior; rationale recorded per issue below. |
 | Preserved Xathis reference | 338 | Historical ground-truth Java source remains byte-for-byte stable. |
 | Preserved sample fixtures | 100 | Original multi-language opponents and deliberate protocol failures remain stable. |
 | Preserved upstream visualizer | 455 | Legacy global-script/browser behavior remains stable. |
@@ -40,9 +43,9 @@ findings are counted once across those two issue bodies.
 | [#8](https://github.com/T-Py-T/AntsAIBot/issues/8) | `docs/reference/xathis/Strategy.java` (2/2) | 33 | Reference snapshot; preserved as ground truth for the Python port. |
 | [#9](https://github.com/T-Py-T/AntsAIBot/issues/9) | `src/ants/ants.py` | 54 | Fixed 40 safe findings, including the identical attack branch and always-true comparison. Deferred 14 game-engine complexity rewrites pending golden replay equivalence. |
 | [#10](https://github.com/T-Py-T/AntsAIBot/issues/10) | `src/sample_bots/java/Tile.java` | 2 | Fixed null-unsafe equality and made the override explicit. Kept the default package so the one-file sample launch contract remains intact. |
-| [#11](https://github.com/T-Py-T/AntsAIBot/issues/11) | `src/tools/mapgen/MapGenerator.java` | 24 | Fixed all three null-path defects. Deferred 21 standalone prototype/style findings; package relocation and algorithm cleanup need a Java map-output harness. |
-| [#12](https://github.com/T-Py-T/AntsAIBot/issues/12) | `src/tools/mapgen/McMaps.py` | 55 | Fixed the Python 3 `dict_keys.sort` failure. Deferred 54 findings in the experimental Python 2/PIL generator, including incomplete Delaunay prototypes and seed-sensitive complexity, because it has no executable dependency/test contract. |
-| [#13](https://github.com/T-Py-T/AntsAIBot/issues/13) | `src/tools/mapgen/SymmetricMapgen.java` | 25 | Fixed integer overflow in distance calculation. Deferred 24 Java prototype/style findings pending a deterministic Java output harness. |
+| [#11](https://github.com/T-Py-T/AntsAIBot/issues/11) | `src/tools/mapgen/MapGenerator.java` | 24 | Fixed 21 findings: all three null paths plus 18 safe validation, naming, modifier, append, and array-copy smells. The start-position loop remains unchanged pending deterministic map equivalence; `System.out` is the API's requested map output, and the default package preserves direct sibling compilation. |
+| [#12](https://github.com/T-Py-T/AntsAIBot/issues/12) | `src/tools/mapgen/McMaps.py` | 55 | Fixed 39 findings, including the Python 3 sort failure, shadowed builtins, no-op/debug blocks, unused locals and indices, type checks, and stale commented code. Deferred 16 behavior-sensitive or incomplete items: seven complexity rewrites, five TODO implementations, the unfinished Delaunay merge, and three unused settings in the unfinished `cell_maze` prototype. |
+| [#13](https://github.com/T-Py-T/AntsAIBot/issues/13) | `src/tools/mapgen/SymmetricMapgen.java` | 25 | Fixed 23 findings: integer overflow plus unused fields, modifier order, redundant casts, boolean flow, and stack modernization. `System.out` is the standalone generator's CLI output, and the default package preserves direct launch. |
 | [#14](https://github.com/T-Py-T/AntsAIBot/issues/14) | `visualizer/copy_paste.html` | 1 | Fixed the missing document language. |
 | [#15](https://github.com/T-Py-T/AntsAIBot/issues/15) | `visualizer/js/CanvasElement.js` | 81 | Bundled upstream visualizer; preserved under the global-script compatibility policy above. |
 | [#16](https://github.com/T-Py-T/AntsAIBot/issues/16) | `docs/reference/xathis/Ant.java` | 36 | Reference snapshot; preserved. |
@@ -84,10 +87,10 @@ findings are counted once across those two issue bodies.
 | [#52](https://github.com/T-Py-T/AntsAIBot/issues/52) | `src/tools/mapgen/heightmap.py` | 5 | Fixed three safe findings. Deferred two seed-sensitive algorithm complexity rewrites pending golden map fixtures. |
 | [#53](https://github.com/T-Py-T/AntsAIBot/issues/53) | `src/tools/mapgen/map.py` | 18 | Fixed 15 safe findings, including exception specificity and the swallowed indexing error. Deferred two complexity rewrites and the public `map` field rename because all generators depend on that interface. |
 | [#54](https://github.com/T-Py-T/AntsAIBot/issues/54) | `src/tools/mapgen/mapgen.py` | 34 | Fixed all 28 mechanical findings. Deferred six seed-sensitive algorithm/CLI complexity rewrites pending golden map fixtures. |
-| [#55](https://github.com/T-Py-T/AntsAIBot/issues/55) | `src/tools/mapgen/MapWalker.java` | 9 | Standalone Java prototype findings deferred pending a deterministic Java map-output harness; package relocation would break direct compilation with the sibling generators. |
+| [#55](https://github.com/T-Py-T/AntsAIBot/issues/55) | `src/tools/mapgen/MapWalker.java` | 9 | Fixed eight safe modifier, cast, stack, and boolean-flow findings. Kept the default package because relocation would break direct compilation with sibling generators. |
 | [#56](https://github.com/T-Py-T/AntsAIBot/issues/56) | `src/tools/mapgen/random_map.py` | 1 | Fixed the wildcard import. |
 | [#57](https://github.com/T-Py-T/AntsAIBot/issues/57) | `src/tools/mapgen/symmetric_mapgen.py` | 8 | Fixed seven mechanical findings. Deferred one seed-sensitive algorithm complexity rewrite pending golden map fixtures. |
-| [#58](https://github.com/T-Py-T/AntsAIBot/issues/58) | `src/tools/mapgen/Test.java` | 3 | Manual standalone Java prototype harness; preserved until it is replaced by an automated Java output test. Default-package relocation would break direct sibling compilation. |
+| [#58](https://github.com/T-Py-T/AntsAIBot/issues/58) | `src/tools/mapgen/Test.java` | 3 | Removed the stale commented-out call. `System.out` is the manual harness output, and the default package preserves direct sibling compilation. |
 | [#59](https://github.com/T-Py-T/AntsAIBot/issues/59) | `src/tools/playgame.py` | 3 | Fixed the broad import catch and duplicate log-name literal. Deferred the monolithic CLI orchestration rewrite pending golden end-to-end games. |
 | [#60](https://github.com/T-Py-T/AntsAIBot/issues/60) | `visualizer/js/Ant.js` | 10 | Bundled upstream visualizer; preserved under the compatibility policy above. |
 | [#61](https://github.com/T-Py-T/AntsAIBot/issues/61) | `visualizer/js/Application.js` | 133 | Bundled upstream visualizer; preserved under the compatibility policy above. |
@@ -102,10 +105,10 @@ findings are counted once across those two issue bodies.
 
 ## Verification requirements
 
-The code-changing subset is verified by Python compilation, the full pytest
-suite, static checks for fatal Python errors, and a short real game through
-`playgame.py`. Java compilation was attempted but this workstation has no Java
-runtime, so the isolated Java changes receive source review and CI coverage
-only. The preserved reference/vendor paths are verified by confirming the diff
-does not alter them, except for the explicit `copy_paste.html` accessibility
-fix.
+The Python code-changing subset is covered by Python compilation, pytest,
+static checks for fatal Python errors, and a short real game through
+`playgame.py`. This workstation has no JDK, and CI does not compile Java. The
+focused Java cleanup is therefore checked with Java syntax parsing and source
+review; lack of JDK-backed compilation is an explicit verification limitation.
+The preserved reference/vendor paths are verified by confirming the diff does
+not alter them, except for the explicit `copy_paste.html` accessibility fix.

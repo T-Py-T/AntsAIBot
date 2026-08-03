@@ -1,6 +1,5 @@
 #!/usr/bin/python
-import sys
-from random import randrange, random, choice, seed
+from random import randrange, random, choice
 from math import sqrt
 import Image, ImageDraw, ImageChops
 from itertools import combinations
@@ -103,25 +102,19 @@ class Triangle:
         return self._center
 
 def divide_conquer():
-    class Delaunay:
-        pass
-
     def form(points):
         if len(points) > 3:
             mid = len(points)//2
             left = form(points[:mid])
             right = form(points[mid:])
             return merge(left, right)
-        else:
-            t = Triangle(points)
-            return
     def merge(left, right):
         pass
     
     width = 100.0
     height = 100.0
     
-    points = [Point(random()*width, random()*height) for i in range(10)]
+    points = [Point(random()*width, random()*height) for _ in range(10)]
     points.sort()    
     
     # draw image
@@ -156,14 +149,9 @@ def delaunay():
     width = 100.0
     height = 100.0
     # create point at 0,0, create 2 triangles in square
-    points = [(0.0,0.0)]
     triangles = []
     triangles.append(Triangle([(0.0,0.0),(0.0, height), (width, 0.0)]))
     triangles.append(Triangle([(0.0, height), (width, 0.0), (width, height)]))
-    
-    # add point, remove inside triangles, create new ones
-    point = (random()*width, random()*height)
-    
     
     # draw triangles
     size = (int(width), int(height))
@@ -204,9 +192,6 @@ def voronoi(players=4):
                 break
             min_dist -= 1
         points.append((px, py))
-    #for px, py in points:
-    #    for nx, ny in points:
-    #        print('(%s)-(%s) = %s' % ((px,py),(nx,ny),distance(px, py, nx, ny, width, height)))
     path = {}
     closest = {}
     for p_x, p_y in points:
@@ -238,10 +223,9 @@ def voronoi(players=4):
     image.save('voronoi.png')
     
 def random_box():
-    players = 4
     width = randrange(16, 64) * 2
     height = randrange(16, 64) * 2
-    m = [[BARRIER for x in range(width)] for y in range(height)]
+    m = [[BARRIER for _ in range(width)] for _ in range(height)]
     def carve(row, col):
         if m[row][col] == BARRIER:
             m[row][col] = LAND
@@ -276,8 +260,6 @@ def random_box():
     return ant_map(m)
 
 def mid_point(loc1, loc2, size):
-    if loc1 == (31,24) and loc2 == (3,25):
-        pass
     row1, col1 = loc1
     row2, col2 = loc2
     rows, cols = size
@@ -357,14 +339,13 @@ horz_mirror = (horz_point, (mirror,), horz_increase)
 horz_rotate = (both_point, (flip, mirror), horz_increase)    
 
 def extend(funcs, points, size, count=2):
-    if type(points) == list:
+    if isinstance(points, list):
         points = {point: x for x, point in enumerate(points)}
-    rows, cols = size
     new_points = {}
-    for point, id in points.items():
-        new_points[point] = id
+    for point, point_id in points.items():
+        new_points[point] = point_id
         for c in range(1,count):
-            new_points[funcs[0](point, funcs[2](size, c), funcs[1])] = id
+            new_points[funcs[0](point, funcs[2](size, c), funcs[1])] = point_id
     return new_points, funcs[2](size, count)
                
 def make_symmetric(points, size, players):
@@ -379,10 +360,6 @@ def make_symmetric(points, size, players):
     col_sym = players/row_sym
     grid = (row_sym, col_sym)
     
-    newsize = (size[0]*row_sym, size[1]*col_sym)
-    newpoints = []
-    comps = []
-
     if row_sym % 2 == 0:
         points, size = extend(choice((vert_copy, vert_mirror, vert_rotate)), points, size)
         row_sym /= 2
@@ -401,7 +378,7 @@ def random_points(count, size, spacing, distance):
     rows, cols = size
     points = []
     failures = 0
-    for c in range(count):
+    for _ in range(count):
         while True:
             point = (randrange(rows), randrange(cols))
             for other_point in points:
@@ -421,7 +398,7 @@ def random_points_unique(count, size, spacing, distance):
     avail_cols = list(range(cols))
     points = []
     failures = 0
-    for c in range(count):
+    for _ in range(count):
         while True:
             point = (choice(avail_rows), choice(avail_cols))
             for other_point in points:
@@ -444,10 +421,10 @@ def random_points_unique(count, size, spacing, distance):
 def cells(size, points, min_gap=5, max_braids=1000, openness=0.25, distance=euclidean_distance):
     rows, cols = size
     size = (rows, cols)
-    m = [[LAND for col in range(cols)] for row in range(rows)]
+    m = [[LAND for _ in range(cols)] for _ in range(rows)]
     
     # ensure points is a dict with id's
-    if type(points) == dict:
+    if isinstance(points, dict):
         points = {point: x for x, point in enumerate(points)}
         
     # undirected node graph
@@ -461,7 +438,7 @@ def cells(size, points, min_gap=5, max_braids=1000, openness=0.25, distance=eucl
             distances = {loc: distance((row,col), loc, size) for loc in points.keys()}
             cutoff = min(distances.values()) + 1
             closest = [point for point, d in distances.items() if d <= cutoff]
-            comps = set([points[point] for point in closest])
+            comps = {points[point] for point in closest}
             
             # find if there are unique complement sets that are closest
             # if not, this is probably a mirrored edge and the points should be
@@ -482,9 +459,6 @@ def cells(size, points, min_gap=5, max_braids=1000, openness=0.25, distance=eucl
                         if (row_distance(m_row, row, rows) <= rows//4 and
                                 col_distance(m_col, col, cols) <= cols//4):
                             barrier[tuple(nearest)].append((row, col))
-                    else:
-                        pass
-                        # barrier[tuple(nearest)].append((row, col))
                 else:
                     # todo: similar logic to wrap around fix, but for
                     #       complementary points
@@ -497,27 +471,16 @@ def cells(size, points, min_gap=5, max_braids=1000, openness=0.25, distance=eucl
                 if (row_distance(row, points[nearest][0], rows) >= rows//2 or
                     col_distance(col, points[nearest][1], cols) >= cols//2):
                     m[row][col] = BARRIER # this barrier can't be carved
-                #m[row][col] = distances.index(closest[0])
-    
-    # add starting positions
-    #for i, (row, col) in enumerate(points):
-    #    m[row][col] = i
-    
     # remove small gaps
     for path in barrier.keys():
-        if len(path) == 2:
-            if len(barrier[path]) < min_gap:
-                neighbor[path[0]].remove(path[1])
-                neighbor[path[1]].remove(path[0])
+        if len(path) == 2 and len(barrier[path]) < min_gap:
+            neighbor[path[0]].remove(path[1])
+            neighbor[path[1]].remove(path[0])
                 
     # carve passages function to pass to maze function
     def carve(path):
-        #print('%s-%s (%s,%s)-(%s,%s) %s,%s' % (chr(path[0]+97), chr(path[1]+97),
-        #                                       points[path[0]][0], points[path[0]][1],
-        #                                       points[path[1]][0], points[path[1]][1],
-        #                                       m_row, m_col))
         paths = [path]
-        if comps != None:
+        if comps is not None:
             paths = zip(comps[path[0]],comps[path[1]])
         for path in paths:
             path = tuple(sorted(path))
@@ -525,23 +488,13 @@ def cells(size, points, min_gap=5, max_braids=1000, openness=0.25, distance=eucl
                 m[row][col] = LAND
                 
             
-    carved = growing_tree(neighbor, carve, max_braids=max_braids, openness=openness)
-    #for c1, cs in carved.items():
-    #    for c2 in cs:
-    #        print "%s-%s " % (chr(c1+97),chr(c2+97)),
-    #print
-    #for n in sorted(barrier.keys()):
-    #    if len(n) == 2:
-    #        print("%s : %s" % ('-'.join([chr(x+97) for x in n]),
-    #                           ' '.join([','.join([str(s2) for s2 in s])
-    #                                     for s in barrier[n]])))
+    growing_tree(neighbor, carve, max_braids=max_braids, openness=openness)
     return m
 
 def growing_tree(nodes, carve, max_braids=1000, openness=0.5):
     cells = [choice(nodes.keys())]
     visited = cells[:]
     carved = defaultdict(list) # modified node graph
-    #carved[cells[0]].append(cells[0])
     new = True # track real dead ends, not backtracked forks
     while len(cells) > 0:
         # tune this for different generation methods
@@ -551,14 +504,14 @@ def growing_tree(nodes, carve, max_braids=1000, openness=0.5):
         index = randrange(len(cells)) 
         
         cell = cells[index]
-        unvisited = [node for node in nodes[cell] if not node in visited]
+        unvisited = [node for node in nodes[cell] if node not in visited]
         if len(unvisited) > 0:
-            next = choice(unvisited)
-            carve((cell, next))
-            carved[next].append(cell)
-            carved[cell].append(next)
-            visited.append(next)
-            cells.append(next)
+            next_cell = choice(unvisited)
+            carve((cell, next_cell))
+            carved[next_cell].append(cell)
+            carved[cell].append(next_cell)
+            visited.append(next_cell)
+            cells.append(next_cell)
             new = True
         else:
             if max_braids > 0 and (new or bool(random() < openness)):
@@ -611,9 +564,9 @@ def file_to_map(filename):
     m = []
     for line in f:
         if line.startswith('rows '):
-            rows = int(line[5:])
+            _ = int(line[5:])
         elif line.startswith('cols '):
-            cols = int(line[5:])
+            _ = int(line[5:])
         elif line.startswith('M '):
             data = line[2:-1]
             m.append([])
@@ -635,11 +588,6 @@ def map_to_png(m, output_filename):
     image = Image.new('RGB', (cols*2, rows*2), FOOD_COLOR)
     for row, row_data in enumerate(m):
         for col, c in enumerate(row_data):
-            #image.putpixel((col, row), COLOR[c])
-            #image.putpixel((col+cols, row), COLOR[c])
-            #image.putpixel((col, row+rows), COLOR[c])
-            #image.putpixel((col+cols, row+rows), COLOR[c])
-
             image.putpixel((col, row), COLOR[c])
             image.putpixel((cols*2-col-1, row), COLOR[c])
             image.putpixel((col, rows*2-row-1), COLOR[c])
@@ -647,13 +595,9 @@ def map_to_png(m, output_filename):
     image.save(output_filename)
 
 def main():
-    #map_to_png(sys.argv[1])
-    #seed(0)
     size = (100, 100)
     points = random_points_unique(400, size, 6, euclidean_distance)
-    m = cells(size, points, max_braids=choice((0,1000)), openness=random())
-    #print(ant_map(m))
-    #map_to_png(m, "test.png")
+    cells(size, points, max_braids=choice((0,1000)), openness=random())
 
 def make_text(points, size):
     tmp = ''
@@ -682,7 +626,3 @@ if __name__ == '__main__':
     p, s, g = make_symmetric(p, s, randrange(2,12))
     t = make_text(p, s)
     print("size: %s\ngrid: %s\n\n%s" % (s, g, t))
-
-    #import cProfile
-    #cProfile.run('main()')
-
