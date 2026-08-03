@@ -42,7 +42,7 @@ findings are counted once across those two issue bodies.
 | [#7](https://github.com/T-Py-T/AntsAIBot/issues/7) | `docs/reference/xathis/Strategy.java` (1/2) | 169 | Reference snapshot; preserved as ground truth for the Python port. |
 | [#8](https://github.com/T-Py-T/AntsAIBot/issues/8) | `docs/reference/xathis/Strategy.java` (2/2) | 33 | Reference snapshot; preserved as ground truth for the Python port. |
 | [#9](https://github.com/T-Py-T/AntsAIBot/issues/9) | `src/ants/ants.py` | 54 | Fixed 40 safe findings, including the identical attack branch and always-true comparison. Deferred 14 game-engine complexity rewrites pending golden replay equivalence. |
-| [#10](https://github.com/T-Py-T/AntsAIBot/issues/10) | `src/sample_bots/java/Tile.java` | 2 | Fixed null-unsafe equality and made the override explicit. Kept the default package so the one-file sample launch contract remains intact. |
+| [#10](https://github.com/T-Py-T/AntsAIBot/issues/10) | `src/sample_bots/java/Tile.java` | 2 | Fixed null-unsafe equality and made the override explicit. Kept the default package so the sample bot sources continue to compile and launch directly from their directory. |
 | [#11](https://github.com/T-Py-T/AntsAIBot/issues/11) | `src/tools/mapgen/MapGenerator.java` | 24 | Fixed 21 findings: all three null paths plus 18 safe validation, naming, modifier, append, and array-copy smells. The start-position loop remains unchanged pending deterministic map equivalence; `System.out` is the API's requested map output, and the default package preserves direct sibling compilation. |
 | [#12](https://github.com/T-Py-T/AntsAIBot/issues/12) | `src/tools/mapgen/McMaps.py` | 55 | Fixed 39 findings, including the Python 3 sort failure, shadowed builtins, no-op/debug blocks, unused locals and indices, type checks, and stale commented code. Deferred 16 behavior-sensitive or incomplete items: seven complexity rewrites, five TODO implementations, the unfinished Delaunay merge, and three unused settings in the unfinished `cell_maze` prototype. |
 | [#13](https://github.com/T-Py-T/AntsAIBot/issues/13) | `src/tools/mapgen/SymmetricMapgen.java` | 25 | Fixed 23 findings: integer overflow plus unused fields, modifier order, redundant casts, boolean flow, and stack modernization. `System.out` is the standalone generator's CLI output, and the default package preserves direct launch. |
@@ -110,5 +110,7 @@ static checks for fatal Python errors, and a short real game through
 `playgame.py`. This workstation has no JDK, and CI does not compile Java. The
 focused Java cleanup is therefore checked with Java syntax parsing and source
 review; lack of JDK-backed compilation is an explicit verification limitation.
-The preserved reference/vendor paths are verified by confirming the diff does
-not alter them, except for the explicit `copy_paste.html` accessibility fix.
+The entries dispositioned as preserved are verified by confirming the diff does
+not alter them. The only changes within those directory trees are the explicit
+`src/sample_bots/java/Tile.java` correctness fix and
+`visualizer/copy_paste.html` accessibility fix described above.
