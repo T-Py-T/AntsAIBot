@@ -3,6 +3,7 @@ import sys
 from random import randint, choice, seed
 from collections import deque
 from itertools import product
+
 try:
     from sys import maxint
 except ImportError:  # Python 3
@@ -15,21 +16,19 @@ LAND = -2
 FOOD = -3
 WATER = -4
 UNSEEN = -5
-MAP_RENDER = '0123456789?%*.!'
+MAP_RENDER = "0123456789?%*.!"
 
-AIM = {'n': (-1, 0),
-       'e': (0, 1),
-       's': (1, 0),
-       'w': (0, -1)}
+AIM = {"n": (-1, 0), "e": (0, 1), "s": (1, 0), "w": (0, -1)}
+
 
 class Map(object):
     def __init__(self, options={}):
         super(Map, self).__init__()
         self.name = "blank"
         self.map = [[]]
-        self.random_seed = options.get('seed', None)
+        self.random_seed = options.get("seed", None)
         if self.random_seed == None:
-            self.random_seed = randint(-maxint-1, maxint)
+            self.random_seed = randint(-maxint - 1, maxint)
         seed(self.random_seed)
 
     def generate(self):
@@ -53,7 +52,9 @@ class Map(object):
         elif isinstance(option, (int, float, str)):
             return option
         else:
-            raise TypeError("Invalid option: type {0} not supported".format(type(option)))
+            raise TypeError(
+                "Invalid option: type {0} not supported".format(type(option))
+            )
 
     def toPNG(self, fd=sys.stdout):
         raise NotImplementedError
@@ -64,14 +65,17 @@ class Map(object):
             for c in row:
                 if c >= ANTS:
                     players.add(c)
-        fd.write("# map_type {0}\n# random_seed {1}\nplayers {2}\nrows {3}\ncols {4}\n"
-                 .format(self.name,
-                         self.random_seed,
-                         len(players),
-                         len(self.map),
-                         len(self.map[0])))
+        fd.write(
+            "# map_type {0}\n# random_seed {1}\nplayers {2}\nrows {3}\ncols {4}\n".format(
+                self.name,
+                self.random_seed,
+                len(players),
+                len(self.map),
+                len(self.map[0]),
+            )
+        )
         for row in self.map:
-            fd.write("m {0}\n".format(''.join([MAP_RENDER[c] for c in row])))
+            fd.write("m {0}\n".format("".join([MAP_RENDER[c] for c in row])))
 
     def manhatten_distance(self, loc1, loc2, size):
         rows, cols = size
@@ -110,8 +114,8 @@ class Map(object):
 
         def is_block_free(loc):
             row, col = loc
-            for d_row in range(-block_size, block_size+1):
-                for d_col in range(-block_size, block_size+1):
+            for d_row in range(-block_size, block_size + 1):
+                for d_col in range(-block_size, block_size + 1):
                     h_row = (row + d_row) % rows
                     h_col = (col + d_col) % cols
                     if self.map[h_row][h_col] == WATER:
@@ -120,8 +124,8 @@ class Map(object):
 
         def mark_block(loc, m, ilk):
             row, col = loc
-            for d_row in range(-block_size, block_size+1):
-                for d_col in range(-block_size, block_size+1):
+            for d_row in range(-block_size, block_size + 1):
+                for d_col in range(-block_size, block_size + 1):
                     h_row = (row + d_row) % rows
                     h_col = (col + d_col) % cols
                     m[h_row][h_col] = ilk
@@ -152,7 +156,7 @@ class Map(object):
                 visited[row][col] = True
                 area_visited[row][col] = True
                 area_seen[row][col] = True
-                for d_row, d_col in ((1,0), (0,1), (-1,0), (0,-1)):
+                for d_row, d_col in ((1, 0), (0, 1), (-1, 0), (0, -1)):
                     s_row = (row + d_row) % rows
                     s_col = (col + d_col) % cols
                     if not visited[s_row][s_col] and is_block_free((s_row, s_col)):
@@ -215,7 +219,7 @@ class Map(object):
         t_rows = rows * row_sym
         t_cols = cols * col_sym
         ant = 0
-        tiled_map = [[LAND]*t_cols for _ in range(t_rows)]
+        tiled_map = [[LAND] * t_cols for _ in range(t_rows)]
         for t_row in range(t_rows):
             for t_col in range(t_cols):
                 # detect grid location

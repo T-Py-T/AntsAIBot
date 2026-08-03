@@ -105,12 +105,14 @@ findings are counted once across those two issue bodies.
 
 ## Verification requirements
 
-The Python code-changing subset is covered by Python compilation, pytest,
-static checks for fatal Python errors, and a short real game through
-`playgame.py`. This workstation has no JDK, and CI does not compile Java. The
-focused Java cleanup is therefore checked with Java syntax parsing and source
-review; lack of JDK-backed compilation is an explicit verification limitation.
-The entries dispositioned as preserved are verified by confirming the diff does
-not alter them. The only changes within those directory trees are the explicit
-`src/sample_bots/java/Tile.java` correctness fix and
-`visualizer/copy_paste.html` accessibility fix described above.
+The maintained Python code-changing subset is covered by Python compilation,
+pytest, static checks for fatal Python errors, and a short real game through
+`playgame.py`. Focused regressions also pin the analyzer's exported-summary
+enrichment and the historical random-number consumption in `McMaps.delaunay`
+and `Map.tile`. CI does not compile Java, so the focused Java cleanup is checked
+with Java syntax parsing and source review; lack of CI-backed compilation is an
+explicit verification limitation. The entries dispositioned as preserved are
+verified by confirming the diff does not alter them. The only changes within
+those directory trees are the explicit `src/sample_bots/java/Tile.java`
+correctness fix and `visualizer/copy_paste.html` accessibility fix described
+above.
