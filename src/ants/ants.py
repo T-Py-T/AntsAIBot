@@ -5,7 +5,6 @@ from collections import deque, defaultdict
 
 from fractions import Fraction
 import operator
-import string
 from src.ants.game import Game
 from copy import deepcopy
 try:
@@ -21,13 +20,15 @@ WATER = -4
 UNSEEN = -5
 
 PLAYER_ANT = 'abcdefghij'
-HILL_ANT = string = 'ABCDEFGHI'
-PLAYER_HILL = string = '0123456789'
+HILL_ANT = 'ABCDEFGHI'
+PLAYER_HILL = '0123456789'
 MAP_OBJECT = '?%*.!'
 MAP_RENDER = PLAYER_ANT + HILL_ANT + PLAYER_HILL + MAP_OBJECT
 
 HILL_POINTS = 2
 RAZE_POINTS = -1
+INVALID_MAP = "Invalid map"
+CLIMB_STAT = 'climb?'
 
 # possible directions an ant can move
 AIM = {'n': (-1, 0),
@@ -163,18 +164,18 @@ class Ants(Game):
 
         # used to give a different ordering of players to each player
         #   initialized to ensure that each player thinks they are player 0
-        self.switch = [[None]*self.num_players + list(range(-5,0)) for i in range(self.num_players)]
+        self.switch = [[None]*self.num_players + list(range(-5,0)) for _ in range(self.num_players)]
         for i in range(self.num_players):
             self.switch[i][i] = 0
         # used to track water and land already reveal to player
-        self.revealed = [[[False for col in range(self.width)]
-                          for row in range(self.height)]
+        self.revealed = [[[False for _ in range(self.width)]
+                          for _ in range(self.height)]
                          for _ in range(self.num_players)]
         # used to track what a player can see
         self.init_vision()
 
         # the engine may kill players before the game starts and this is needed to prevent errors
-        self.orders = [[] for i in range(self.num_players)]
+        self.orders = [[] for _ in range(self.num_players)]
         
 
     def distance(self, a_loc, b_loc):
@@ -216,7 +217,7 @@ class Ants(Game):
             elif key == 'players':
                 num_players = int(value)
                 if num_players < 2 or num_players > 10:
-                    raise Exception("map",
+                    raise ValueError("map",
                                     "player count must be between 2 and 10")
             elif key == 'score':
                 score = list(map(int, value.split()))
@@ -225,13 +226,13 @@ class Ants(Game):
             elif key == 'm':
                 if ant_list is None:
                     if num_players is None:
-                        raise Exception("map",
+                        raise ValueError("map",
                                         "players count expected before map lines")
                     ant_list = [chr(97 + i) for i in range(num_players)]
                     hill_list = list(map(str, range(num_players)))
                     hill_ant = [chr(65 + i) for i in range(num_players)]
                 if len(value) != width:
-                    raise Exception("map",
+                    raise ValueError("map",
                                     "Incorrect number of cols in row %s. "
                                     "Got %s, expected %s."
                                     %(row, len(value), width))
@@ -250,21 +251,21 @@ class Ants(Game):
                     elif c == MAP_OBJECT[WATER]:
                         water.append((row,col))
                     elif c != MAP_OBJECT[LAND]:
-                        raise Exception("map",
+                        raise ValueError("map",
                                         "Invalid character in map: %s" % c)
                 row += 1
 
         if score and len(score) != num_players:
-            raise Exception("map",
+            raise ValueError("map",
                             "Incorrect score count.  Expected %s, got %s"
                             % (num_players, len(score)))
         if hive and len(hive) != num_players:
-            raise Exception("map",
+            raise ValueError("map",
                             "Incorrect score count.  Expected %s, got %s"
-                            % (num_players, len(score)))
+                            % (num_players, len(hive)))
 
         if height != row:
-            raise Exception("map",
+            raise ValueError("map",
                             "Incorrect number of rows.  Expected %s, got %s"
                             % (height, row))
 
@@ -272,7 +273,7 @@ class Ants(Game):
         if not self.scenario:
             for hill, count in hill_count.items():
                 if count == 0:
-                    raise Exception("map",
+                    raise ValueError("map",
                                     "Player %s has no starting hills"
                                     % hill)
 
@@ -322,11 +323,11 @@ class Ants(Game):
         for d in AIM:
             # determine the previous view
             p_r, p_c = -AIM[d][0], -AIM[d][1]
-            p_locs = set(
-                (((p_r+r)%self.height-self.height),
-                 ((p_c+c)%self.width-self.width))
+            p_locs = {
+                ((p_r+r)%self.height-self.height,
+                 (p_c+c)%self.width-self.width)
                 for r,c in locs
-            )
+            }
             cache[d] = [list(p_locs), list(locs-p_locs), list(p_locs-locs)]
         self.vision_offsets_cache = cache
 
@@ -449,15 +450,15 @@ class Ants(Game):
 
         # next list all transient objects
         for update in updates:
-            type, row, col = update[0:3]
+            update_type, row, col = update[0:3]
 
             # only include updates to squares which are visible
             # and the current players dead ants
-            if v[row][col] or (type == 'd' and update[-1] == player):
+            if v[row][col] or (update_type == 'd' and update[-1] == player):
                 visible_updates.append(update)
 
                 # switch player perspective of player numbers
-                if type in ['a', 'd', 'h']:
+                if update_type in ['a', 'd', 'h']:
                     # an ant can appear in a bots vision and die the same turn
                     # in this case the ant has not been assigned a number yet
                     #   assign the enemy the next index
@@ -666,11 +667,11 @@ class Ants(Game):
               then that food disappears.
         """
         # gather food
-        for f_loc in list(self.current_food.keys()):
+        for f_loc in self.current_food.copy():
             # find the owners of all the ants near the food
-            nearby_players = set(
+            nearby_players = {
                 ant.owner for ant in self.nearby_ants(f_loc, self.spawnradius)
-            )
+            }
 
             if len(nearby_players) == 1:
                 # gather food because there is only one player near the food
@@ -705,7 +706,7 @@ class Ants(Game):
             An error is raised if the location is not free
         """
         if self.map[loc[0]][loc[1]] != LAND:
-            raise Exception("Add food error",
+            raise ValueError("Add food error",
                             "Food already found at %s" %(loc,))
         self.map[loc[0]][loc[1]] = FOOD
         food = Food(loc, self.turn)
@@ -726,7 +727,7 @@ class Ants(Game):
                 self.hive_food[owner] += 1
             return self.current_food.pop(loc)
         except KeyError:
-            raise Exception("Remove food error",
+            raise ValueError("Remove food error",
                             "Food not found at %s" %(loc,))
 
     def add_hill(self, loc, owner):
@@ -783,7 +784,7 @@ class Ants(Game):
             return self.current_ants.pop(loc)
         except KeyError:
             if not ignore_error:
-                raise Exception("Kill ant error",
+                raise ValueError("Kill ant error",
                                 "Ant not found at %s" %(loc,))
 
     def player_ants(self, player):
@@ -816,12 +817,7 @@ class Ants(Game):
             enemies = self.nearby_ants(ant.loc, self.attackradius, ant.owner)
             if enemies:
                 nearby_enemies[ant] = enemies
-                strenth = 10 # dot dot dot
-                if ant.orders[-1] == '-':
-                    strenth = 10
-                else:
-                    strenth = 10
-                damage_per_enemy = Fraction(strenth, len(enemies)*10)
+                damage_per_enemy = Fraction(1, len(enemies))
                 for enemy in enemies:
                     damage[enemy] += damage_per_enemy
 
@@ -917,7 +913,7 @@ class Ants(Game):
                 if not ants_by_distance[ant] or ant.killed:
                     continue
 
-                ant_group = set([ant])
+                ant_group = {ant}
                 find_enemy(ant, distance)
 
                 # kill all ants in groups with more than 1 ant
@@ -1125,7 +1121,7 @@ class Ants(Game):
     def place_food(self):
         """ Place food in scheduled locations if they are free
         """
-        for loc in list(self.pending_food.keys()):
+        for loc in self.pending_food.copy():
             if self.map[loc[0]][loc[1]] == LAND:
                 self.add_food(loc)
                 self.pending_food[loc] -= 1
@@ -1168,16 +1164,14 @@ class Ants(Game):
                 # compare locations
                 ilk0 = self.map[row0][col0]
                 ilk1 = self.map[row1][col1]
-                if ilk0 == 0 and ilk1 != player:
-                    # friendly ant not in same location
+                mismatch = (
+                    (ilk0 == 0 and ilk1 != player)
+                    or (ilk0 > 0 and (ilk1 < 0 or ilk1 == player))
+                    or (ilk0 < 0 and ilk1 != ilk0)
+                )
+                if mismatch:
                     return None
-                elif ilk0 > 0 and (ilk1 < 0 or ilk1 == player):
-                    # enemy ant not in same location
-                    return None
-                elif ilk0 < 0 and ilk1 != ilk0:
-                    # land or water not in same location
-                    return None
-                if ilk0 >= 0 and enemy_map != None:
+                if ilk0 >= 0:
                     enemy_map[ilk0] = ilk1
         return enemy_map
 
@@ -1190,11 +1184,11 @@ class Ants(Game):
         #     list of tuples containing
         #         location, aim, and enemy map dict
         orientations = [[(hills[0].loc, 0,
-            dict([(i, i, ) for i in range(self.num_players)]))]]
+            {i: i for i in range(self.num_players)})]]
         for player in range(1, self.num_players):
             player_hills = [hill for hill in self.hills.values() if hill.owner == player]
             if len(player_hills) != len(hills):
-                raise Exception("Invalid map",
+                raise ValueError(INVALID_MAP,
                                 "This map is not symmetric.  Player 0 has {0} hills while player {1} has {2} hills."
                                 .format(len(hills), player, len(player_hills)))
             new_orientations = []
@@ -1210,7 +1204,7 @@ class Ants(Game):
                             new_orientations.append(new_hill_aims)
             orientations = new_orientations
             if len(orientations) == 0:
-                raise Exception("Invalid map",
+                raise ValueError(INVALID_MAP,
                                 "This map is not symmetric. Player {0} does not have an orientation that matches player 0"
                                 .format(player))
         # ensure types of hill aims in orientations are symmetric
@@ -1230,7 +1224,7 @@ class Ants(Game):
             for (row, col), ilk in reversed(fix):
                 self.map[row][col] = ilk
         if len(valid_orientations) == 0:
-            raise Exception("Invalid map",
+            raise ValueError(INVALID_MAP,
                             "There are no valid orientation sets")
         return valid_orientations
 
@@ -1272,8 +1266,8 @@ class Ants(Game):
 
         food_sets = []
         # start with only land squares
-        visited = [[False for col in range(self.width)]
-                          for row in range(self.height)]
+        visited = [[False for _ in range(self.width)]
+                          for _ in range(self.height)]
 
         # aim for ahill0 will always be 0
         ant0 = self.map_symmetry[0][0]
@@ -1299,10 +1293,10 @@ class Ants(Game):
                 # offset to ant 0
                 o_row, o_col = row - ant0[0], col - ant0[1]
                 # set of unique food locations based on offsets from each starting ant
-                locations = list(set([
+                locations = list({
                     self.destination(loc, self.offset_aim((o_row, o_col), aim))
                     for loc, aim, _ in self.map_symmetry
-                ]))
+                })
                 # duplicates can happen if 2 ants are the same distance from 1 square
                 # the food set will be smaller and food spawning takes this into account
 
@@ -1597,7 +1591,13 @@ class Ants(Game):
         stats = {}
         stats['ant_count'] = ant_count
         stats['food'] = len(self.current_food)
-        stats['cutoff'] = 'Food' if self.cutoff_bot == FOOD else '-' if self.cutoff_bot == LAND else self.cutoff_bot
+        if self.cutoff_bot == FOOD:
+            cutoff = 'Food'
+        elif self.cutoff_bot == LAND:
+            cutoff = '-'
+        else:
+            cutoff = self.cutoff_bot
+        stats['cutoff'] = cutoff
         stats['c_turns'] = self.cutoff_turns
         stats['winning'] = self.winning_bot
         stats['w_turn'] = self.winning_turn
@@ -1606,32 +1606,27 @@ class Ants(Game):
         stats['score'] = self.score
         stats['s_alive'] = [1 if self.is_alive(player) else 0 for player in range(self.num_players)]
         stats['s_hills'] = [1 if player in self.remaining_hills() else 0 for player in range(self.num_players)]
-        stats['climb?'] = []
-#        stats['max_score'] = {}
+        stats[CLIMB_STAT] = []
         for player in range(self.num_players):
             if self.is_alive(player) and player in self.remaining_hills():
                 found = 0
                 max_score = sum([HILL_POINTS for hill in self.hills.values()
                                  if hill.killed_by is None
                                  and hill.owner != player]) + self.score[player]
-#                stats['max_score'][player] = max_score
-#                stats['min_score_%s' % player] = {}
                 for opponent in range(self.num_players):
                     if player != opponent:
                         min_score = sum([RAZE_POINTS for hill in self.hills.values()
                                          if hill.killed_by is None
                                          and hill.owner == opponent]) + self.score[opponent]
-#                        stats['min_score_%s' % player][opponent] = min_score
                         if ((self.score[player] < self.score[opponent]
                                 and max_score >= min_score)
                                 or (self.score[player] == self.score[opponent]
                                 and max_score > min_score)):
                             found = 1
-                            #return False
                             break
-                stats['climb?'].append(found)
+                stats[CLIMB_STAT].append(found)
             else:
-                stats['climb?'].append(0)
+                stats[CLIMB_STAT].append(0)
         return stats
 
     def get_replay(self):
@@ -1699,9 +1694,6 @@ class Ants(Game):
                 hill_data.append(self.turn + 1)
             else:
                 hill_data.append(hill.end_turn)
-            #if not hill.killed_by is None:
-            #    hill_data.append(hill.owner)
-
             replay['hills'].append(hill_data)
 
         # scores

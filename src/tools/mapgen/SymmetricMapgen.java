@@ -122,7 +122,7 @@ public class SymmetricMapgen {
         int dr = Math.min(d1, rows - d1);
         int dc = Math.min(d2, cols - d2);
 
-        return Math.sqrt(dr * dr + dc * dc);
+        return Math.sqrt((double) dr * dr + (double) dc * dc);
     }
 
     //Adds ants to the map

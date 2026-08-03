@@ -218,7 +218,7 @@ public class MapGenerator {
 
         if (nbrOfPlayers == 2) {
             if (diagMode) {
-                fullMap = overlayMaps(fullMap, mirrorDiagonal(mapPart));
+                fullMap = overlayMaps(mapPart, mirrorDiagonal(mapPart));
             }
             else {
                 fullMap = new int[mapPart.length * 2][mapPart[0].length];
@@ -229,7 +229,7 @@ public class MapGenerator {
         else if (nbrOfPlayers == 4) {
             if (diagMode) {
                 mapPart = mirrorDiagonal(mapPart);
-                fullMap = overlayMaps(fullMap, mapPart);
+                fullMap = overlayMaps(mapPart, mirrorDiagonal(mapPart));
                 fullMap = overlayMaps(fullMap, mirrorDiagonal2(fullMap));
             }
             else {
@@ -248,6 +248,9 @@ public class MapGenerator {
             addMapPart(fullMap, mirrorTopBottom(mapPart), mapPart.length, 0);
             addMapPart(fullMap, mirrorLeftRight(mapPart), 0, mapPart[0].length);
             addMapPart(fullMap, mirrorBoth(mapPart), mapPart.length, mapPart[0].length);
+        }
+        else {
+            throw new IllegalStateException("Only 2, 4, or 8 players are supported");
         }
 
         if (border) {

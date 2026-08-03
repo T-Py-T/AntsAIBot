@@ -4,15 +4,12 @@ Advanced Analysis Tool for AntsAIBot Results
 Loads all game results into memory for fast analysis and validation
 """
 
-import json
-import pandas as pd
-import numpy as np
 import argparse
+import json
 import sys
-from pathlib import Path
-from typing import Dict, List, Tuple
+
 import matplotlib.pyplot as plt
-import seaborn as sns
+import pandas as pd
 
 class AntsAIAnalyzer:
     def __init__(self, results_file: str = None):
@@ -25,54 +22,53 @@ class AntsAIAnalyzer:
     def load_results(self):
         """Load results from JSON file into pandas DataFrame"""
         try:
-            with open(self.results_file, 'r') as f:
+            with open(self.results_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-            
-            # Convert to DataFrame
+
             self.df = pd.DataFrame(data)
-            
-            # Extract individual game results if available
-            if 'game_results' in self.df.columns:
-                game_rows = []
-                for _, row in self.df.iterrows():
-                    if isinstance(row['game_results'], list):
-                        for game in row['game_results']:
-                            game['test_name'] = row['test_name']
-                            game['timestamp'] = row['timestamp']
-                            
-                            # Extract food collection data from replay data
-                            if 'replaydata' in game and 'hive_history' in game['replaydata']:
-                                hive_history = game['replaydata']['hive_history']
-                                if len(hive_history) >= 2:
-                                    # Food collected = final hive amount (total food collected)
-                                    game['food_collected'] = hive_history[0][-1] if hive_history[0] else 0
-                                    game['enemy_food_collected'] = hive_history[1][-1] if len(hive_history) > 1 and hive_history[1] else 0
-                                else:
-                                    game['food_collected'] = 0
-                                    game['enemy_food_collected'] = 0
-                            else:
-                                game['food_collected'] = 0
-                                game['enemy_food_collected'] = 0
-                            
-                            game_rows.append(game)
-                
-                if game_rows:
-                    self.game_data = pd.DataFrame(game_rows)
-                else:
-                    self.game_data = pd.DataFrame()
-            else:
-                self.game_data = pd.DataFrame()
-            
+            self.game_data = pd.DataFrame(self._extract_game_rows())
+
             print(f"✅ Loaded {len(self.df)} test results")
             if not self.game_data.empty:
                 print(f"✅ Loaded {len(self.game_data)} individual game results")
-                
+
         except FileNotFoundError:
             print(f"❌ Results file {self.results_file} not found")
             sys.exit(1)
         except Exception as e:
             print(f"❌ Error loading results: {e}")
             sys.exit(1)
+
+    def _extract_game_rows(self):
+        """Return normalized per-game dictionaries from aggregate rows."""
+        if 'game_results' not in self.df.columns:
+            return []
+
+        game_rows = []
+        for _, row in self.df.iterrows():
+            if not isinstance(row['game_results'], list):
+                continue
+            for raw_game in row['game_results']:
+                game = dict(raw_game)
+                game['test_name'] = row['test_name']
+                game['timestamp'] = row['timestamp']
+                self._add_food_collection(game)
+                game_rows.append(game)
+        return game_rows
+
+    @staticmethod
+    def _add_food_collection(game):
+        """Add the final hive totals used by the food analysis report."""
+        replay_data = game.get('replaydata', {})
+        hive_history = replay_data.get('hive_history', [])
+        if len(hive_history) < 2:
+            game['food_collected'] = 0
+            game['enemy_food_collected'] = 0
+            return
+        player_history = hive_history[0]
+        enemy_history = hive_history[1]
+        game['food_collected'] = player_history[-1] if player_history else 0
+        game['enemy_food_collected'] = enemy_history[-1] if enemy_history else 0
     
     def validate_against_raw_outputs(self, sample_size: int = 5):
         """Validate analysis against raw game outputs"""
@@ -105,7 +101,7 @@ class AntsAIAnalyzer:
     
     def full_analysis(self):
         """Perform full statistical analysis"""
-        print(f"\n📈 full STATISTICAL ANALYSIS")
+        print("\n📈 full STATISTICAL ANALYSIS")
         print("=" * 50)
         
         # Summary statistics
@@ -134,7 +130,7 @@ class AntsAIAnalyzer:
         
         # Detailed analysis if we have individual game data
         if not self.game_data.empty:
-            print(f"\n📊 DETAILED GAME-LEVEL ANALYSIS:")
+            print("\n📊 DETAILED GAME-LEVEL ANALYSIS:")
             print(f"Total individual games analyzed: {len(self.game_data)}")
             
             # Win rate by opponent
@@ -150,7 +146,7 @@ class AntsAIAnalyzer:
             print(game_summary)
             
             # Score distribution analysis
-            print(f"\n🎲 SCORE DISTRIBUTION ANALYSIS:")
+            print("\n🎲 SCORE DISTRIBUTION ANALYSIS:")
             score_analysis = self.game_data.groupby('test_name').agg({
                 'our_score': ['min', 'max', 'median'],
                 'enemy_score': ['min', 'max', 'median'],
@@ -164,7 +160,7 @@ class AntsAIAnalyzer:
             print("❌ No individual game data available for trend analysis")
             return
         
-        print(f"\n📈 PERFORMANCE TRENDS ANALYSIS")
+        print("\n📈 PERFORMANCE TRENDS ANALYSIS")
         print("=" * 40)
         
         # Rolling win rate (if we have enough games)
@@ -179,11 +175,19 @@ class AntsAIAnalyzer:
                 print(f"\n{test_name} - Rolling Win Rate (5-game window):")
                 print(f"  First 5 games: {test_games['rolling_win_rate'].iloc[4]:.1f}%")
                 print(f"  Last 5 games: {test_games['rolling_win_rate'].iloc[-1]:.1f}%")
-                print(f"  Overall trend: {'📈 Improving' if test_games['rolling_win_rate'].iloc[-1] > test_games['rolling_win_rate'].iloc[4] else '📉 Declining' if test_games['rolling_win_rate'].iloc[-1] < test_games['rolling_win_rate'].iloc[4] else '➡️ Stable'}")
+                first_rate = test_games['rolling_win_rate'].iloc[4]
+                last_rate = test_games['rolling_win_rate'].iloc[-1]
+                if last_rate > first_rate:
+                    trend = '📈 Improving'
+                elif last_rate < first_rate:
+                    trend = '📉 Declining'
+                else:
+                    trend = '➡️ Stable'
+                print(f"  Overall trend: {trend}")
     
     def statistical_significance(self):
         """Calculate statistical significance of results"""
-        print(f"\n📊 STATISTICAL SIGNIFICANCE ANALYSIS")
+        print("\n📊 STATISTICAL SIGNIFICANCE ANALYSIS")
         print("=" * 45)
         
         for test_name in self.df['test_name'].unique():
@@ -226,7 +230,7 @@ class AntsAIAnalyzer:
             performance_series = (
                 self.game_data.groupby('turns')['result'].value_counts()
             )
-            performance_by_turns: Dict[int, Dict[str, int]] = {}
+            performance_by_turns: dict[int, dict[str, int]] = {}
             for (turns, result), count in performance_series.items():
                 performance_by_turns.setdefault(int(turns), {})[str(result)] = int(count)
 
@@ -247,7 +251,7 @@ class AntsAIAnalyzer:
             print("❌ No individual game data available for plotting")
             return
         
-        print(f"\n📊 CREATING PERFORMANCE VISUALIZATIONS")
+        print("\n📊 CREATING PERFORMANCE VISUALIZATIONS")
         print("=" * 40)
         
         # Set up the plotting style
@@ -324,10 +328,10 @@ def main():
     if args.all or args.validate:
         analyzer.validate_against_raw_outputs(args.sample_size)
     
-    if args.all or True:  # Always run basic analysis
-        analyzer.full_analysis()
-        analyzer.performance_trends()
-        analyzer.statistical_significance()
+    # Basic analysis is always produced; flags enable the optional sections.
+    analyzer.full_analysis()
+    analyzer.performance_trends()
+    analyzer.statistical_significance()
     
     if args.all or args.export:
         analyzer.export_detailed_report()

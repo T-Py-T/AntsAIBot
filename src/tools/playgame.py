@@ -42,7 +42,7 @@ try:
     colorize = True
     color_default = (colorama.Fore.RED)
     color_reset = (colorama.Style.RESET_ALL)
-except:
+except (ImportError, AttributeError):
     colorize = False
     color_default = None
     color_reset = None
@@ -264,6 +264,7 @@ def main(argv):
         return -1
 
 def run_rounds(opts,args):
+    error_log_pattern = '{0}.bot{1}.error'
     def get_cmd_wd(cmd, exec_rel_cwd=False):
         ''' get the proper working directory from a command line '''
         new_cmd = []
@@ -398,13 +399,13 @@ def run_rounds(opts,args):
         if opts.log_error and opts.log_dir:
             if opts.log_stderr:
                 if opts.log_stdout:
-                    engine_options['error_logs'] = [Tee(Comment(stderr), open(os.path.join(opts.log_dir, '{0}.bot{1}.error'.format(game_id, i)), 'w'))
+                    engine_options['error_logs'] = [Tee(Comment(stderr), open(os.path.join(opts.log_dir, error_log_pattern.format(game_id, i)), 'w'))
                                       for i in range(bot_count)]
                 else:
-                    engine_options['error_logs'] = [Tee(stderr, open(os.path.join(opts.log_dir, '{0}.bot{1}.error'.format(game_id, i)), 'w'))
+                    engine_options['error_logs'] = [Tee(stderr, open(os.path.join(opts.log_dir, error_log_pattern.format(game_id, i)), 'w'))
                                       for i in range(bot_count)]
             else:
-                engine_options['error_logs'] = [open(os.path.join(opts.log_dir, '{0}.bot{1}.error'.format(game_id, i)), 'w')
+                engine_options['error_logs'] = [open(os.path.join(opts.log_dir, error_log_pattern.format(game_id, i)), 'w')
                                   for i in range(bot_count)]
         elif opts.log_stderr:
             if opts.log_stdout:

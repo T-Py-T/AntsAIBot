@@ -492,7 +492,7 @@ class XathisBot:
         a free, safe neighbor. Keeps the spawn pipeline unblocked until
         the real ``distribute`` / ``explore`` phases land.
         """
-        my_hill_set = {h for h in self.my_hills}
+        my_hill_set = set(self.my_hills)
         for ant in self.my_ants:
             if ant.has_moved or ant.tile not in my_hill_set:
                 continue
@@ -1012,9 +1012,7 @@ class XathisBot:
             for enemy_combo in self._iter_combos(enemy_options):
                 if len(set(enemy_combo)) != len(enemy_combo):
                     continue
-                score = self._eval_battle(
-                    my_group, my_combo, enemy_group, enemy_combo
-                )
+                score = self._eval_battle(my_combo, enemy_combo)
                 if score < worst_score:
                     worst_score = score
                     if worst_score <= best_score:
@@ -1065,8 +1063,8 @@ class XathisBot:
             if i == n:
                 return
 
-    def _eval_battle(self, my_group: List[Ant], my_combo: Tuple[Tile, ...],
-                     enemy_group: List[Ant], enemy_combo: Tuple[Tile, ...]) -> int:
+    def _eval_battle(self, my_combo: Tuple[Tile, ...],
+                     enemy_combo: Tuple[Tile, ...]) -> int:
         """Score = (enemy_dead − my_dead) under official AI Challenge
         battle resolution applied to the post-move positions.
 
@@ -1461,7 +1459,7 @@ class XathisBot:
     # ------------------------------------------------------------------
     # Move issuing
     # ------------------------------------------------------------------
-    def do_move(self, src: Tile, dest: Tile, info: str = "") -> bool:
+    def do_move(self, src: Tile, dest: Tile, _info: str = "") -> bool:
         """Issue a move from ``src`` to ``dest`` (must be a direct neighbor).
 
         Mirrors ``Strategy.doMove`` (Strategy.java:1656). Returns True if

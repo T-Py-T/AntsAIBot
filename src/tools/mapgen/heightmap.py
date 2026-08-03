@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from map import *
+from map import ANTS, LAND, WATER, Map
 from random import randint, choice
 from collections import defaultdict
 
@@ -61,7 +61,6 @@ class HeightMapMap(Map):
         cols = len(hmap[0])
 
         # new height map
-        min_list = self.local_min(hmap)
         self.normalize(hmap)
         water_map = [[0] * cols for _ in range(rows)]
 
@@ -77,7 +76,7 @@ class HeightMapMap(Map):
                     for d_row, d_col in ((1,0), (0,1), (-1,0), (0,-1)):
                         h_row = (c_row + d_row) % rows
                         h_col = (c_col + d_col) % cols
-                        if not (h_row, h_col) in water_path:
+                        if (h_row, h_col) not in water_path:
                             h[hmap[h_row][h_col]] += [(h_row, h_col)]
                     # select randomly if there are 2 squares at the same height
                     if len(h) == 0:

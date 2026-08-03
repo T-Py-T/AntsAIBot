@@ -105,7 +105,7 @@ class Triangle:
 def divide_conquer():
     class Delaunay:
         pass
-    
+
     def form(points):
         if len(points) > 3:
             mid = len(points)//2
@@ -215,10 +215,9 @@ def voronoi(players=4):
             if (p_x, p_y) != (n_x, n_y):
                 dist = distance(p_x, p_y, n_x, n_y, width, height)
                 nearest[dist] = (n_x, n_y)
-        sorted = nearest.keys()
-        sorted.sort()
-        path[(p_x, p_y)] = [nearest[key] for key in sorted[:3]]
-        closest[(p_x, p_y)] = sorted[0]
+        ordered_distances = sorted(nearest)
+        path[(p_x, p_y)] = [nearest[key] for key in ordered_distances[:3]]
+        closest[(p_x, p_y)] = ordered_distances[0]
     image = Image.new('RGB', (width, height), BARRIER_COLOR)
     draw = ImageDraw.Draw(image)
     for point in points:
@@ -683,8 +682,7 @@ if __name__ == '__main__':
     p, s, g = make_symmetric(p, s, randrange(2,12))
     t = make_text(p, s)
     print("size: %s\ngrid: %s\n\n%s" % (s, g, t))
-    
+
     #import cProfile
     #cProfile.run('main()')
-    
-    
+

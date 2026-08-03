@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from ants import *
+from ants import ANTS, BEHIND, FOOD, HILL, LEFT, RIGHT, UNSEEN, Ants
 
 # ============================================================================
 # LEARNED WINNING BOT - Based on LeftyBot + GreedyBot insights
@@ -51,7 +51,7 @@ class AdvancedBot:
         
         # Continue standing orders from previous turn (from GreedyBot)
         for order in self.standing_orders:
-            ant_loc, step_loc, dest_loc, order_type = order
+            ant_loc, _, dest_loc, order_type = order
             if ((order_type == HILL and dest_loc in ants.enemy_hills()) or
                     (order_type == FOOD and dest_loc in ants.food()) or
                     (order_type == ANTS and dest_loc in ants.enemy_ants()) or
@@ -182,7 +182,7 @@ class AdvancedBot:
         
         for direction in directions:
             (n_row, n_col) = ants.destination(a_row, a_col, direction)
-            if (not (n_row, n_col) in destinations and
+            if ((n_row, n_col) not in destinations and
                 ants.unoccupied(n_row, n_col)):
                 ants.issue_order((a_row, a_col, direction))
                 destinations.append((n_row, n_col))
@@ -194,8 +194,8 @@ class AdvancedBot:
     def wall_following_strategy(self, ants, a_row, a_col, destinations, new_straight, new_lefty):
         """IMPROVED wall-following exploration strategy to beat LeftyBot"""
         # Send new ants in a straight line
-        if (not (a_row, a_col) in self.ants_straight and
-                not (a_row, a_col) in self.ants_lefty):
+        if ((a_row, a_col) not in self.ants_straight and
+                (a_row, a_col) not in self.ants_lefty):
             direction = self.get_initial_direction(a_row, a_col)
             new_straight[(a_row, a_col)] = direction
 
@@ -205,7 +205,7 @@ class AdvancedBot:
             n_row, n_col = ants.destination(a_row, a_col, direction)
             if ants.passable(n_row, n_col):
                 if (ants.unoccupied(n_row, n_col) and
-                        not (n_row, n_col) in destinations):
+                        (n_row, n_col) not in destinations):
                     ants.issue_order((a_row, a_col, direction))
                     new_straight[(n_row, n_col)] = direction
                     destinations.append((n_row, n_col))
@@ -215,7 +215,7 @@ class AdvancedBot:
                         alt_row, alt_col = ants.destination(a_row, a_col, alt_dir)
                         if (ants.passable(alt_row, alt_col) and
                                 ants.unoccupied(alt_row, alt_col) and
-                                not (alt_row, alt_col) in destinations):
+                                (alt_row, alt_col) not in destinations):
                             ants.issue_order((a_row, a_col, alt_dir))
                             new_straight[(alt_row, alt_col)] = alt_dir
                             destinations.append((alt_row, alt_col))
@@ -237,7 +237,7 @@ class AdvancedBot:
                 n_row, n_col = ants.destination(a_row, a_col, new_direction)
                 if ants.passable(n_row, n_col):
                     if (ants.unoccupied(n_row, n_col) and
-                            not (n_row, n_col) in destinations):
+                            (n_row, n_col) not in destinations):
                         ants.issue_order((a_row, a_col, new_direction))
                         new_lefty[(n_row, n_col)] = new_direction
                         destinations.append((n_row, n_col))
@@ -248,7 +248,7 @@ class AdvancedBot:
                             alt_row, alt_col = ants.destination(a_row, a_col, alt_dir)
                             if (ants.passable(alt_row, alt_col) and
                                     ants.unoccupied(alt_row, alt_col) and
-                                    not (alt_row, alt_col) in destinations):
+                                    (alt_row, alt_col) not in destinations):
                                 ants.issue_order((a_row, a_col, alt_dir))
                                 new_lefty[(alt_row, alt_col)] = alt_dir
                                 destinations.append((alt_row, alt_col))

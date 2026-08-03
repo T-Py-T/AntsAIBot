@@ -43,7 +43,7 @@ class Grid():
         if not self.pick_tile_dimensions():
             return False
 
-        self.squares = [ ['%' for c in range(self.cols)] for r in range(self.rows) ]
+        self.squares = [ ['%' for _ in range(self.cols)] for _ in range(self.rows) ]
 
         self.add_starting_hills()
         a_block = self.make_block(self.h_loc, self.block_size)
@@ -67,7 +67,7 @@ class Grid():
         if not self.pick_rotational_dimensions():
             return False
 
-        self.squares = [ ['%' for c in range(self.cols)] for r in range(self.rows) ]
+        self.squares = [ ['%' for _ in range(self.cols)] for _ in range(self.rows) ]
 
         self.add_starting_hills()
         a_block = self.make_block(self.h_loc, self.block_size)
@@ -77,7 +77,7 @@ class Grid():
     #picks valid dimensions for a tile symmetric grid
     def pick_tile_dimensions(self):
         original_no_players = self.no_players
-        for d_attempt in range(200000):
+        for _ in range(200000):
             self.block_size = random.randint(self.min_block_size, self.max_block_size)
             self.rows = random.randint(self.min_dimensions, self.max_dimensions)
             self.cols = random.randint(self.rows, self.max_dimensions)
@@ -111,7 +111,7 @@ class Grid():
     def pick_rotational_dimensions(self):
         original_no_players = self.no_players
         original_r_sym_type = self.r_sym_type
-        for d_attempt in range(100):
+        for _ in range(100):
             #picks number of players if it is not given
             if original_no_players == -1:
                 if original_r_sym_type > 3:
@@ -142,8 +142,8 @@ class Grid():
                 self.no_players == 8:
                 self.cols = self.rows
 
-            visited = [ [False for c in range(self.cols)] for r in range(self.rows)]
-            for a_attempt in range(2*self.rows):
+            visited = [ [False for _ in range(self.cols)] for _ in range(self.rows)]
+            for _ in range(2*self.rows):
                 while True:
                     self.h_loc = self.random_loc()
                     if not visited[self.h_loc[0]][self.h_loc[1]]:
@@ -160,9 +160,9 @@ class Grid():
     #works out a list of loctations that generates the set of locations under the given symmetry
     def generate_basis_information(self):
         self.basis_locs = []
-        self.is_basis_block = [ [False for c in range(self.cols)] for r in range(self.rows)]
-        self.is_basis_loc = [ [False for c in range(self.cols)] for r in range(self.rows)]
-        visited = [ [False for c in range(self.cols)] for r in range(self.rows)]
+        self.is_basis_block = [ [False for _ in range(self.cols)] for _ in range(self.rows)]
+        self.is_basis_loc = [ [False for _ in range(self.cols)] for _ in range(self.rows)]
+        visited = [ [False for _ in range(self.cols)] for _ in range(self.rows)]
 
         a_block = self.make_block(self.h_loc, self.block_size)
 
@@ -281,7 +281,7 @@ class Grid():
 
     #returns the adjacent block in a given direction
     def get_adjacent_block(self, block, direction):
-        for n in range(int(math.sqrt(len(block)))):
+        for _ in range(int(math.sqrt(len(block)))):
             block = self.get_block(block, direction)
         return block
 
@@ -339,8 +339,8 @@ class Grid():
     def add_extra_hills(self):
         self.h_locs = self.get_symmetric_locs(self.h_loc)
 
-        for h in range(self.no_hills-1):
-            for d_attempt in range(100):
+        for _ in range(self.no_hills-1):
+            for _ in range(100):
                 h_loc = self.random_loc()
                 if self.is_valid_hill_loc(h_loc):
                     break
@@ -369,7 +369,7 @@ class Grid():
         stack = []
         c_loc = self.h_loc
         c_block = self.make_block(c_loc, self.block_size)
-        visited = [ [False for c in range(self.cols)] for r in range(self.rows)]
+        visited = [ [False for _ in range(self.cols)] for _ in range(self.rows)]
 
         while True:
             visited[c_loc[0]][c_loc[1]] = True
@@ -416,9 +416,9 @@ class Grid():
     #adds extra land blocks to the map
     def add_extra_land_blocks(self):
         extra_locs = random.randint(2, 12)
-        for extra_loc in range(extra_locs):
+        for _ in range(extra_locs):
             block_found = False
-            for b_attempt in range(100):
+            for _ in range(100):
                 c_block = self.make_block(self.h_loc, self.block_size)
 
                 r_directions = self.random_directions()
@@ -428,7 +428,7 @@ class Grid():
                         c_block = n_block
                         break
 
-                for i in range(15):
+                for _ in range(15):
                     r_directions = self.random_directions()
                     for d in r_directions:
                         n_block = c_block
@@ -456,7 +456,7 @@ class Grid():
 
     #adds extra land locations to the map
     def add_extra_land_locs(self):
-        visited = [ [False for c in range(self.cols)] for r in range(self.rows)]
+        visited = [ [False for _ in range(self.cols)] for _ in range(self.rows)]
         w_locs = []
 
         stack = [self.h_loc]
@@ -477,7 +477,7 @@ class Grid():
                     visited[n_loc[0]][n_loc[1]] = True
 
         locs_to_add = int(0.5*len(w_locs))
-        for w in range(locs_to_add):
+        for _ in range(locs_to_add):
             r_square = random.randint(0, len(w_locs)-1)
             self.add_land(w_locs[r_square])
             w_locs.remove(w_locs[r_square])
@@ -494,7 +494,7 @@ class Grid():
 
     #randomly translates the map
     def translate(self):
-        old_map = [ ['%' for c in range(self.cols)] for r in range(self.rows) ]
+        old_map = [ ['%' for _ in range(self.cols)] for _ in range(self.rows) ]
         for r in range(self.rows):
             for c in range(self.cols):
                 old_map[r][c] = self.squares[r][c]
@@ -632,4 +632,3 @@ def main(argv):
 
 if __name__ == '__main__':
     main(sys.argv[1:])
-

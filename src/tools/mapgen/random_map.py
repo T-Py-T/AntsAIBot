@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-from map import *
-from random import choice, randint, randrange, shuffle, seed
+from map import LAND, WATER, Map
+from random import randint
 
 class RandomMap(Map):
     def __init__(self, options={}):

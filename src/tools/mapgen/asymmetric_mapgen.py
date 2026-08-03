@@ -45,7 +45,7 @@ class AsymmetricMap():
     #makes a map by carving it out of water
     def random_walk_map(self):
         self.pick_dimensions()
-        self.map_data = [ ['%' for c in range(self.cols)] for r in range(self.rows) ]
+        self.map_data = [ ['%' for _ in range(self.cols)] for _ in range(self.rows) ]
 
         self.add_ants()
         self.basis = self.get_basis()
@@ -55,7 +55,7 @@ class AsymmetricMap():
 
     def random_map(self):
         self.pick_dimensions()
-        self.map_data = [ ['%' for c in range(self.cols)] for r in range(self.rows) ]
+        self.map_data = [ ['%' for _ in range(self.cols)] for _ in range(self.rows) ]
         self.add_ants()
         self.basis = self.get_basis()
         self.add_random_land()
@@ -104,9 +104,9 @@ class AsymmetricMap():
     #starts two random walks from the players starting ants
     def start_walks(self):
         self.c_locs = [self.a_loc, self.a_loc]
-        for w in range(self.no_extra_walks):
+        for _ in range(self.no_extra_walks):
             c_loc = self.pick_square()
-            for n in range(self.no_players):
+            for _ in range(self.no_players):
                 self.c_locs.append(self.pick_square())
                 self.c_loc = self.get_translate_loc(c_loc)
 
@@ -137,7 +137,7 @@ class AsymmetricMap():
     #fills in all symmetrically equivalent squares with the given type
     def fill_squares(self, loc, type):
         value = type
-        for n in range(self.no_players):
+        for _ in range(self.no_players):
             self.map_data[loc[0] ][loc[1] ] = value
             if type == '0':
                 value = chr(ord(value)+1)
@@ -146,7 +146,7 @@ class AsymmetricMap():
     #checks whether the players start far enough apart
     def is_valid_start(self):
         loc = n_loc = [0,0]
-        for n in range(self.no_players-1):
+        for _ in range(self.no_players-1):
             n_loc = self.get_translate_loc(n_loc)
             if self.distance(loc, n_loc) < self.min_start_distance:
                 return False
@@ -155,7 +155,7 @@ class AsymmetricMap():
     #checks whether the players can reach every non-wall square
     def is_valid(self):
         start_loc = self.a_loc
-        visited = [ [False for c in range(self.cols)] for r in range(self.rows)]
+        visited = [ [False for _ in range(self.cols)] for _ in range(self.rows)]
         visited[start_loc[0] ][start_loc[1] ] = True
         squaresVisited = 1
 
@@ -186,7 +186,7 @@ class AsymmetricMap():
 
     #returns a basis for the squares under translation
     def get_basis(self):
-        visited = [ [False for c in range(self.cols)] for r in range(self.rows)]
+        visited = [ [False for _ in range(self.cols)] for _ in range(self.rows)]
         visited[self.a_loc[0]][self.a_loc[1]] = True
 
         basis = [self.a_loc]
@@ -199,7 +199,7 @@ class AsymmetricMap():
                 if visited[n_loc[0] ][n_loc[1] ] == False:
                     basis.append(n_loc)
                     queue.append(n_loc)
-                    for n in range(self.no_players):
+                    for _ in range(self.no_players):
                         visited[n_loc[0] ][n_loc[1] ] = True
                         n_loc = self.get_translate_loc(n_loc)
 
@@ -211,7 +211,7 @@ class AsymmetricMap():
                                           int(self.max_land_proportion*self.rows*self.cols))
 
         while self.land_squares < no_land_squares or not self.is_valid():
-            for w in range(self.no_extra_walks):
+            for _ in range(self.no_extra_walks):
                 for n in range(self.no_players):
                     c_loc = self.basis[random.randint(0, len(self.basis)-1)]
                     c_loc = self.get_translate_loc2(c_loc, n*self.row_t, n*self.col_t)
@@ -239,4 +239,3 @@ if __name__ == '__main__':
     example_map = AsymmetricMap()
     example_map.random_walk_map()
     example_map.print_map()
-

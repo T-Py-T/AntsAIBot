@@ -74,8 +74,8 @@ class Ants():
                     self.attackradius2 = int(tokens[1])
                 elif key == 'spawnradius2':
                     self.spawnradius2 = int(tokens[1])
-        self.map = [[UNSEEN for col in range(self.width)]
-                    for row in range(self.height)]
+        self.map = [[UNSEEN for _ in range(self.width)]
+                    for _ in range(self.height)]
 
     def update(self, data):
         # clear ant and food data
@@ -272,6 +272,6 @@ class Ants():
                     map_data += current_line + '\n'
             except EOFError:
                 break
-            except Exception as e:
+            except Exception:
                 traceback.print_exc(file=sys.stderr)
                 break

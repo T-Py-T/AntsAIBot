@@ -295,7 +295,7 @@ class Jail(object):
         if not self.is_alive:
             timeout=0
         try:
-            time, line = self.stdout_queue.get(block=True, timeout=timeout)
+            _, line = self.stdout_queue.get(block=True, timeout=timeout)
             return line
         except Empty:
             return None
@@ -311,7 +311,7 @@ class Jail(object):
         if not self.is_alive:
             timeout=0
         try:
-            time, line = self.stderr_queue.get(block=True, timeout=timeout)
+            _, line = self.stderr_queue.get(block=True, timeout=timeout)
             return line
         except Empty:
             return None
@@ -414,7 +414,7 @@ class House:
         """Copy the working directory back out of the sandbox."""
         if self.is_alive:
             raise SandboxError("Tried to retrieve sandbox while still alive")
-        pass
+        return None
 
     def release(self):
         """Release the sandbox for further use
@@ -425,7 +425,7 @@ class House:
         """
         if self.is_alive:
             raise SandboxError("Sandbox released while still alive")
-        pass
+        return None
 
     def pause(self):
         """Pause the process by sending a SIGSTOP to the child
@@ -532,7 +532,7 @@ def main():
     parser.add_option("-d", "--directory", action="store", dest="working_dir",
             default=".",
             help="Working directory to run command in (copied in secure mode)")
-    parser.add_option("-l", action="append", dest="send_lines", default=list(),
+    parser.add_option("-l", action="append", dest="send_lines", default=[],
             help="String to send as a line on commands stdin")
     parser.add_option("-s", "--send-delay", action="store", dest="send_delay",
             type="float", default=0.0,

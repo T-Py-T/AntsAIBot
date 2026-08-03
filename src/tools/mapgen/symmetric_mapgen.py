@@ -47,7 +47,7 @@ class SymmetricMap():
     #makes a map by performing a bunch of random walks carving out water
     def random_walk_map(self):
         self.pick_dimensions()
-        self.map_data = [ ['%' for c in range(self.cols)] for r in range(self.rows) ]
+        self.map_data = [ ['%' for _ in range(self.cols)] for _ in range(self.rows) ]
         self.add_ants()
         self.start_walks()
         self.add_walk_land()
@@ -108,7 +108,7 @@ class SymmetricMap():
     #starts two random walks from the players starting ants
     def start_walks(self):
         self.c_locs = [self.a_loc, self.a_loc]
-        for w in range(self.no_extra_walks):
+        for _ in range(self.no_extra_walks):
             self.c_locs.append(self.pick_square())
 
     #walks the random walk locations
@@ -137,7 +137,7 @@ class SymmetricMap():
     #fills in all symmetrically equivalent squares with the given type
     def fill_squares(self, loc, type):
         value = type
-        for n in range(self.no_players):
+        for _ in range(self.no_players):
             self.map_data[loc[0] ][loc[1] ] = value
             if type == '0':
                 value = chr(ord(value)+1)
@@ -146,7 +146,7 @@ class SymmetricMap():
     #checks whether the players start far enough apart
     def is_valid_start(self):
         loc = n_loc = [0,0]
-        for n in range(self.no_players-1):
+        for _ in range(self.no_players-1):
             n_loc = self.get_translate_loc(n_loc)
             if self.distance(loc, n_loc) < self.min_start_distance:
                 return False
@@ -155,7 +155,7 @@ class SymmetricMap():
     #checks whether the players can reach every non-wall square
     def is_valid(self):
         start_loc = self.a_loc
-        visited = [ [False for c in range(self.cols)] for r in range(self.rows)]
+        visited = [ [False for _ in range(self.cols)] for _ in range(self.rows)]
         visited[start_loc[0] ][start_loc[1] ] = True
         squaresVisited = 1
 
@@ -213,4 +213,3 @@ if __name__ == '__main__':
     example_map = SymmetricMap()
     example_map.random_walk_map()
     example_map.print_map()
-
