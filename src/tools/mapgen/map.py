@@ -201,10 +201,14 @@ class Map(object):
         # select random mirroring
         row_mirror = 0
         if row_sym % 2 == 0:
+            # Preserve the historical RNG draw even though mirroring is fixed.
+            choice((row_mirror, 2))
             row_mirror = 2
 
         col_mirror = 0
         if col_sym % 2 == 0:
+            # Preserve the historical RNG draw even though mirroring is fixed.
+            choice((col_mirror, 2))
             col_mirror = 2
 
         # perform tiling

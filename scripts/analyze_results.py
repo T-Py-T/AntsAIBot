@@ -49,7 +49,9 @@ class AntsAIAnalyzer:
             if not isinstance(row['game_results'], list):
                 continue
             for raw_game in row['game_results']:
-                game = dict(raw_game)
+                # Keep enriching the nested records in ``self.df`` so the
+                # detailed report's summary retains its established shape.
+                game = raw_game
                 game['test_name'] = row['test_name']
                 game['timestamp'] = row['timestamp']
                 self._add_food_collection(game)

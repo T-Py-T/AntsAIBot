@@ -152,6 +152,11 @@ def delaunay():
     triangles = []
     triangles.append(Triangle([(0.0,0.0),(0.0, height), (width, 0.0)]))
     triangles.append(Triangle([(0.0, height), (width, 0.0), (width, height)]))
+
+    # These draws historically selected an unfinished insertion point. Keep
+    # consuming them so callers that seed this module retain the same sequence.
+    random()
+    random()
     
     # draw triangles
     size = (int(width), int(height))
