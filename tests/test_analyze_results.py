@@ -121,7 +121,9 @@ def synthetic_results(tmp_path: Path) -> Path:
 
 
 class TestAntsAIAnalyzerLoading:
-    def test_loads_synthetic_results(self, analyzer_module, synthetic_results: Path) -> None:
+    def test_loads_synthetic_results(
+        self, analyzer_module, synthetic_results: Path
+    ) -> None:
         analyzer = analyzer_module.AntsAIAnalyzer(str(synthetic_results))
         assert len(analyzer.df) == 2
         # 4 + 2 game-level rows expected

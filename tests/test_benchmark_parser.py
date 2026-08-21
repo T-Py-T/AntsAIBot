@@ -60,14 +60,17 @@ SAMPLE_4P_DRAW = (
 )
 
 
-@pytest.mark.parametrize("line,expected_outcome", [
-    (SAMPLE_WIN, "WIN"),
-    (SAMPLE_LOSS, "LOSS"),
-    (SAMPLE_DRAW, "DRAW"),
-    (SAMPLE_4P_WIN, "WIN"),
-    # 4-player tie that includes player_0 → DRAW (player_0 still on top)
-    (SAMPLE_4P_DRAW, "DRAW"),
-])
+@pytest.mark.parametrize(
+    "line,expected_outcome",
+    [
+        (SAMPLE_WIN, "WIN"),
+        (SAMPLE_LOSS, "LOSS"),
+        (SAMPLE_DRAW, "DRAW"),
+        (SAMPLE_4P_WIN, "WIN"),
+        # 4-player tie that includes player_0 → DRAW (player_0 still on top)
+        (SAMPLE_4P_DRAW, "DRAW"),
+    ],
+)
 def test_outcome_classification(benchmark_mod, line, expected_outcome):
     outcome = benchmark_mod.parse_result_line(line)
     assert outcome is not None
@@ -134,12 +137,10 @@ def test_matchup_summary_tally(benchmark_mod):
     assert t["win_rate"] == 50.0
 
 
-def test_run_one_game_forwards_both_seeds(
-    benchmark_mod, monkeypatch, tmp_path
-):
+def test_run_one_game_forwards_both_seeds(benchmark_mod, monkeypatch, tmp_path):
     captured = {}
 
-    def fake_run(cmd, **kwargs):
+    def fake_run(cmd, **_kwargs):
         captured["cmd"] = cmd
         return SimpleNamespace(stdout=SAMPLE_WIN, stderr="", returncode=0)
 
@@ -161,25 +162,39 @@ def test_run_one_game_forwards_both_seeds(
     assert outcome.player_seed == 29
 
 
-def test_summary_records_master_and_per_game_seeds(
-    benchmark_mod, tmp_path
-):
+def test_summary_records_master_and_per_game_seeds(benchmark_mod, tmp_path):
     outcome = benchmark_mod.parse_result_line(SAMPLE_WIN)
     assert outcome is not None
     outcome.engine_seed = 17
     outcome.player_seed = 29
-    summary = benchmark_mod.MatchupSummary(
-        name="vs_RandomBot", games=[outcome]
-    )
+    summary = benchmark_mod.MatchupSummary(name="vs_RandomBot", games=[outcome])
 
-    markdown_path = benchmark_mod.write_summary(
-        [summary], tmp_path, master_seed=41
-    )
-    json_payload = json.loads(
-        markdown_path.with_suffix(".json").read_text()
-    )
+    markdown_path = benchmark_mod.write_summary([summary], tmp_path, master_seed=41)
+    json_payload = json.loads(markdown_path.with_suffix(".json").read_text())
 
     assert "Master seed: 41" in markdown_path.read_text()
     assert json_payload[0]["master_seed"] == 41
     assert json_payload[0]["games"][0]["engine_seed"] == 17
     assert json_payload[0]["games"][0]["player_seed"] == 29
+
+
+def test_main_reports_summary_outside_repo(benchmark_mod, tmp_path, capsys):
+    output_dir = tmp_path / "benchmark-results"
+    result = benchmark_mod.main(
+        [
+            "--games",
+            "0",
+            "--seed",
+            "42",
+            "--log-dir",
+            str(tmp_path / "game-logs"),
+            "--output-dir",
+            str(output_dir),
+        ]
+    )
+
+    assert result == 0
+    captured = capsys.readouterr().out
+    assert f"Summary written to {output_dir}" in captured
+    assert list(output_dir.glob("summary_*.md"))
+    assert list(output_dir.glob("summary_*.json"))

@@ -15,7 +15,6 @@ import pytest
 from bots import ants as bot_helper_ants
 from bots.ants import AIM, BEHIND, LEFT, RIGHT
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -233,8 +232,7 @@ class TestAdvancedBotDoTurn:
         )
         bot.do_turn(ants)
         destinations = [
-            ants.destination(row, col, direction)
-            for row, col, direction in ants.orders
+            ants.destination(row, col, direction) for row, col, direction in ants.orders
         ]
         assert len(destinations) == len(set(destinations))
 
