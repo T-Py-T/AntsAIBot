@@ -110,8 +110,15 @@ uv sync --all-extras
 
 make pytest
 make test
-make visualize-latest
+make visualize-evidence
 ```
+
+`make visualize-evidence` opens the retained current-SHA replay with the map,
+ants, score history, and turn controls. `make visualize-latest` instead opens
+the newest replay produced under `game_logs/` during local development.
+
+Install the local commit gate once with `uv run pre-commit install`. It runs a
+staged-diff check and the full test suite before a commit is accepted.
 
 Optional dependency groups are explicit so a contributor can install only the
 surface being exercised:
