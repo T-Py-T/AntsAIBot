@@ -127,7 +127,7 @@ surface being exercised:
 | --- | --- | --- |
 | `[test]` | pytest and coverage support | Unit and integration regression checks |
 | `[analysis]` | pandas, NumPy, SciPy, Matplotlib, and Seaborn | Benchmark aggregation and plots |
-| `[dev]` | Both groups | Complete contributor environment |
+| `[dev]` | Both groups plus pre-commit | Complete contributor environment |
 
 Docker and a VS Code dev container are available when a host-local Python/Java
 toolchain is undesirable:
