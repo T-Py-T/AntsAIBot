@@ -32,7 +32,7 @@ def devcontainer() -> dict:
 
 
 def test_devcontainer_parses(devcontainer: dict) -> None:
-    assert devcontainer["name"] == "AntsAIBot Development"
+    assert devcontainer["name"] == "ants-strategy-agent development"
     assert devcontainer["workspaceFolder"] == "/app"
 
 

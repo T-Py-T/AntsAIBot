@@ -31,7 +31,9 @@ def _load_bot_module():
     """
 
     bot_path = REPO_ROOT / "src" / "bots" / "bot.py"
-    spec = importlib.util.spec_from_file_location("antsaibot_bot_under_test", bot_path)
+    spec = importlib.util.spec_from_file_location(
+        "ants_strategy_agent_bot_under_test", bot_path
+    )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     saved = sys.modules.get("ants")

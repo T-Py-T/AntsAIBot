@@ -25,7 +25,9 @@ def _load_analyzer_module():
     """Import scripts/analyze_results.py by file path (it isn't a package)."""
 
     path = REPO_ROOT / "scripts" / "analyze_results.py"
-    spec = importlib.util.spec_from_file_location("antsaibot_analyze_results", path)
+    spec = importlib.util.spec_from_file_location(
+        "ants_strategy_agent_analyze_results", path
+    )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

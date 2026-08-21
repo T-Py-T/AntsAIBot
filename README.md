@@ -1,4 +1,4 @@
-# Ants Strategy Agent
+# ants-strategy-agent
 
 A deterministic multi-agent strategy system for the 2011 Ants AI Challenge,
 packaged with a local game engine, reference opponents, replay visualization,
@@ -17,7 +17,7 @@ the engine/protocol boundary covered by tests.
 | Evaluation | [`Makefile`](Makefile), [`scripts/benchmark.py`](scripts/benchmark.py) | Named head-to-head, probabilistic, and benchmark entry points |
 | Regression protection | [`tests/`](tests), [PR workflow](.github/workflows/ci.yml) | Unit, protocol, engine, sample-bot, Docker, and real-game checks |
 | Qualitative debugging | [`visualizer/`](visualizer) | Browser replay inspection for behavior and failure analysis |
-| Strong reference opponent | [`src/bots/xathis_bot.py`](src/bots/xathis_bot.py), [`docs/reference/xathis/`](docs/reference/xathis) | Tested Python port anchored to preserved historical source |
+| Historical comparison | [`src/bots/xathis_bot.py`](src/bots/xathis_bot.py), [`docs/reference/xathis/`](docs/reference/xathis) | Partial Python reimplementation beside the preserved winning Java source |
 
 ## System design
 
@@ -59,6 +59,17 @@ make test
 make test-vs-xathis
 make benchmark-xathis
 ```
+
+Reproducing an engine run requires two independent values. `engine_seed`
+controls engine-side randomness such as food generation; `player_seed` is sent
+to each bot so opponents with randomized policies can reproduce their choices.
+The showcased Make targets default to `SEED=42`: game targets pass it as both
+values, while the benchmark runner uses it as a recorded master seed from which
+it derives and records an engine/player seed pair for every game. Override it
+with a command such as `make benchmark SEED=73`. The same code revision, map,
+arguments, bot revisions, and both per-game seeds are required for a repeatable
+comparison. Wall-clock timeouts and runtime differences remain external
+sources of variation.
 
 [`statistics.json`](statistics.json) and
 [`parallel_statistics.json`](parallel_statistics.json) are retained historical
@@ -107,7 +118,7 @@ same checks locally before opening or updating a PR.
 ```
 src/
 ├── ants/               # engine, game state, protocol, sandbox
-├── bots/               # strategy bot and Xathis reference port
+├── bots/               # strategy bot and partial Xathis reimplementation
 ├── sample_bots/        # fixed evaluation opponents in several languages
 └── tools/              # match runner and map generation
 tests/                  # deterministic regression suite
@@ -119,14 +130,23 @@ docs/reference/xathis/  # preserved historical reference source
 
 ## Scope and provenance
 
-Taylor's work is the strategy implementation, Python reference port,
-integration hardening, tests, benchmark/analysis tooling, and developer
-workflow around the challenge. The repository also preserves challenge-engine,
-sample-opponent, visualizer, and historical Xathis reference material so the
-system can be exercised locally. Those retained components are reference and
-compatibility inputs, not presented as original work; see
+Taylor's work includes the strategy implementation, partial Python Xathis
+reimplementation, integration hardening, tests, benchmark/analysis tooling,
+and developer workflow around the challenge. The repository also preserves
+challenge-engine, sample-opponent, visualizer, and historical Xathis reference
+material so the system can be exercised locally. Those retained components are
+reference and compatibility inputs, not presented as original work; see
 [`docs/gitroll-triage.md`](docs/gitroll-triage.md) for the explicit maintenance
 boundary.
+
+The preserved Java sources under `docs/reference/xathis/` are the historical
+first-place Xathis bot. `src/bots/xathis_bot.py` is an incomplete Python
+reimplementation: several strategy phases remain no-ops, and its combat search
+is a simplified, bounded substitute for the original algorithm. Its tests show
+that the implemented pieces and engine integration work; they do not establish
+strategic fidelity or strength equivalent to the winning Java bot. Xathis
+matchups in this repository are therefore regression and comparison inputs,
+not evidence of world-class competitive performance.
 
 The repository does not currently publish a repository-wide license file.
 Third-party source remains subject to its original terms and retained notices.

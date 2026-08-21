@@ -15,7 +15,8 @@ findings are counted once across those two issue bodies.
   structure cleanup. Seed-sensitive control flow, unfinished algorithms, CLI
   output, and default-package launch contracts remain explicitly dispositioned.
 - `docs/reference/xathis/` is the preserved source of the 2011 winning bot. It is
-  evidence for the Python port, not a maintained Java application.
+  evidence for the partial Python reimplementation, not a maintained Java
+  application.
 - `src/sample_bots/` contains protocol opponents and deliberate failure fixtures
   (`ErrorBot`, `InvalidBot`, and `TimeoutBot`). Cross-language packaging and broad
   cleanup would weaken their value as original, directly executable fixtures.
@@ -30,7 +31,7 @@ findings are counted once across those two issue bodies.
 | --- | ---: | --- |
 | Corrected in code | 251 | Correctness defects and safe smells removed; tests updated where interfaces changed. |
 | Explicit engineering deferral | 72 | Seed/game-sensitive complexity or unfinished utility behavior; rationale recorded per issue below. |
-| Preserved Xathis reference | 338 | Historical ground-truth Java source remains byte-for-byte stable. |
+| Preserved Xathis reference | 338 | Historical Java source remains byte-for-byte stable. |
 | Preserved sample fixtures | 100 | Original multi-language opponents and deliberate protocol failures remain stable. |
 | Preserved upstream visualizer | 455 | Legacy global-script/browser behavior remains stable. |
 | **Total** | **1,216** | Every finding is either fixed or explicitly dispositioned. |
@@ -39,8 +40,8 @@ findings are counted once across those two issue bodies.
 
 | Issue | File | Findings | Disposition |
 | --- | --- | ---: | --- |
-| [#7](https://github.com/T-Py-T/ants-strategy-agent/issues/7) | `docs/reference/xathis/Strategy.java` (1/2) | 169 | Reference snapshot; preserved as ground truth for the Python port. |
-| [#8](https://github.com/T-Py-T/ants-strategy-agent/issues/8) | `docs/reference/xathis/Strategy.java` (2/2) | 33 | Reference snapshot; preserved as ground truth for the Python port. |
+| [#7](https://github.com/T-Py-T/ants-strategy-agent/issues/7) | `docs/reference/xathis/Strategy.java` (1/2) | 169 | Reference snapshot; preserved as the source for comparison with the partial Python reimplementation. |
+| [#8](https://github.com/T-Py-T/ants-strategy-agent/issues/8) | `docs/reference/xathis/Strategy.java` (2/2) | 33 | Reference snapshot; preserved as the source for comparison with the partial Python reimplementation. |
 | [#9](https://github.com/T-Py-T/ants-strategy-agent/issues/9) | `src/ants/ants.py` | 54 | Fixed 40 safe findings, including the identical attack branch and always-true comparison. Deferred 14 game-engine complexity rewrites pending golden replay equivalence. |
 | [#10](https://github.com/T-Py-T/ants-strategy-agent/issues/10) | `src/sample_bots/java/Tile.java` | 2 | Fixed null-unsafe equality and made the override explicit. Kept the default package so the sample bot sources continue to compile and launch directly from their directory. |
 | [#11](https://github.com/T-Py-T/ants-strategy-agent/issues/11) | `src/tools/mapgen/MapGenerator.java` | 24 | Fixed 21 findings: all three null paths plus 18 safe validation, naming, modifier, append, and array-copy smells. The start-position loop remains unchanged pending deterministic map equivalence; `System.out` is the API's requested map output, and the default package preserves direct sibling compilation. |
@@ -60,7 +61,7 @@ findings are counted once across those two issue bodies.
 | [#25](https://github.com/T-Py-T/ants-strategy-agent/issues/25) | `src/ants/sandbox.py` | 5 | Fixed all findings. |
 | [#26](https://github.com/T-Py-T/ants-strategy-agent/issues/26) | `src/bots/ants.py` | 6 | Fixed three safe findings. Deferred three protocol-parser/direction complexity rewrites to preserve the bot wire contract. |
 | [#27](https://github.com/T-Py-T/ants-strategy-agent/issues/27) | `src/bots/bot.py` | 11 | Fixed nine safe findings, including explicit imports and idiomatic membership checks. Deferred two strategy complexity rewrites pending game-outcome equivalence. |
-| [#28](https://github.com/T-Py-T/ants-strategy-agent/issues/28) | `src/bots/xathis_bot.py` | 17 | Fixed four safe findings and updated direct tests for the narrowed battle helper. Deferred 13 complexity rewrites because this port is the benchmark oracle for the historical winner. |
+| [#28](https://github.com/T-Py-T/ants-strategy-agent/issues/28) | `src/bots/xathis_bot.py` | 17 | Fixed four safe findings and updated direct tests for the narrowed battle helper. Deferred 13 complexity rewrites because the incomplete reimplementation is behavior-sensitive and not validated against the historical winner. |
 | [#29](https://github.com/T-Py-T/ants-strategy-agent/issues/29) | `src/sample_bots/java/Aim.java` | 5 | Multi-language reference opponent; preserved. |
 | [#30](https://github.com/T-Py-T/ants-strategy-agent/issues/30) | `src/sample_bots/java/Ants.java` | 24 | Multi-language protocol/reference fixture; preserved. |
 | [#31](https://github.com/T-Py-T/ants-strategy-agent/issues/31) | `src/sample_bots/java/Bot.java` | 2 | Multi-language protocol/reference fixture; preserved. |
