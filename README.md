@@ -1,227 +1,152 @@
-# Ants AI Bot: Multi-Agent Strategy Implementation
+# ants-strategy-agent
 
-**A competitive AI bot for the Ants AI Challenge implementing hierarchical decision-making and strategic optimization**
+A deterministic multi-agent strategy system for the 2011 Ants AI Challenge,
+packaged with a local game engine, reference opponents, replay visualization,
+benchmark tooling, and PR-gated tests.
 
-I built this bot to compete in the Ants AI Challenge, focusing on creating an intelligent agent that can make strategic decisions in real-time while managing multiple competing objectives. The challenge requires balancing food collection, colony expansion, territory control, and enemy engagement - essentially a multi-objective optimization problem with dynamic constraints.
+The engineering focus is the evaluation loop around the bot: run repeatable
+matches, inspect replays, compare strategies against fixed opponents, and keep
+the engine/protocol boundary covered by tests.
 
-## What I Built
+## At a glance
 
-### Core Decision System
-I implemented a hierarchical priority system that balances competing objectives:
-- **Colony multiplication** (highest priority) - ensuring ants return to hills for reproduction
-- **Strategic combat** - targeting enemy hills and ants when advantageous  
-- **Resource acquisition** - aggressive food collection with dynamic distance thresholds
-- **Exploration** - systematic map discovery using wall-following algorithms
+| Area | Public evidence | Signal |
+| --- | --- | --- |
+| Strategy implementation | [`src/bots/bot.py`](src/bots/bot.py) | Hierarchical objectives, persistent orders, collision avoidance, exploration, and combat heuristics |
+| Game runtime | [`src/ants/`](src/ants), [`src/tools/playgame.py`](src/tools/playgame.py) | Local engine, sandboxing, protocol parsing, and match orchestration |
+| Evaluation | [`Makefile`](Makefile), [`scripts/benchmark.py`](scripts/benchmark.py) | Named head-to-head, probabilistic, and benchmark entry points |
+| Regression protection | [`tests/`](tests), [PR workflow](.github/workflows/ci.yml) | Unit, protocol, engine, sample-bot, Docker, and real-game checks |
+| Qualitative debugging | [`visualizer/`](visualizer) | Browser replay inspection for behavior and failure analysis |
+| Historical comparison | [`src/bots/xathis_bot.py`](src/bots/xathis_bot.py), [`docs/reference/xathis/`](docs/reference/xathis) | Partial Python reimplementation beside the preserved winning Java source |
 
-### Key Algorithms
-**Multi-Objective Optimization**: The bot uses a priority-based decision tree where each ant evaluates multiple objectives and selects the highest-priority action available. This prevents getting stuck in local optima (like collecting all food without reproducing).
+## System design
 
-**Dynamic Thresholding**: Food hunting distances adapt based on colony size - when I have fewer ants, the bot hunts food from much further away (up to 50 tiles) to catch up to opponents.
-
-**Pathfinding & Navigation**: Uses breadth-first search for optimal pathfinding and implements wall-following exploration patterns adapted from computational geometry principles.
-
-**State Management**: Tracks game state efficiently using dictionaries and sets, with a standing orders system that persists tasks across multiple turns.
-
-### Technical Implementation
-The bot combines insights from studying successful opponents (LeftyBot's exploration, GreedyBot's priority system) with my own optimizations:
-
-- **Aggressive multiplication strategy** - returns to hills when ant count ≤ 20
-- **Strategic combat** - only hunts enemy ants when I have numerical advantage
-- **Enhanced exploration** - multiple exploration patterns beyond simple wall-following
-- **Efficient collision avoidance** - prevents multiple ants from targeting the same destination
-
-## Current Status & Performance
-
-The bot is functional but still underperforming against advanced opponents. Here's what I've learned:
-
-### What Works
-- **Hill return mechanics** - Fixed a critical bug where ants collected food but didn't return to hills for multiplication
-- **Aggressive food hunting** - Extended hunting distances to 50+ tiles when colony is small
-- **Strategic combat** - Only engages enemies when I have numerical advantage
-- **Exploration patterns** - Multiple exploration strategies beyond basic wall-following
-
-### Current Challenges
-- **Performance against LeftyBot** - Still losing to systematic wall-following exploration
-- **Food collection efficiency** - GreedyBot's direct food collection strategy outperforms my approach
-- **Multi-objective balance** - Need better tuning of priority weights and thresholds
-
-### Performance Metrics
-| Opponent | Result | Key Issue |
-|----------|--------|-----------|
-| RandomBot | Win (deterministic baseline) | RandomBot dies / hangs out — bot reliably wins |
-| GreedyBot | Loss (16 vs 31 ants) | Food collection strategy needs work |
-| HunterBot | Loss (6 vs 4 ants) | Combat mechanics need refinement |
-| LeftyBot | Loss (11 vs 52 ants) | Exploration strategy needs improvement |
-| **XathisBot** | **Loss (final boss)** | Port of the AI Challenge 2011 winner — see below |
-
-### The "Final Boss": XathisBot
-
-`src/bots/xathis_bot.py` is a Python port of the **AI Challenge 2011 winner**
-("xathis", written in Java). The original source and the recovered postmortem
-live at `docs/reference/xathis/`. xathis uses the same general phases as a
-strong scripted bot (food BFS, exploration, hill attack, defence) but adds
-two things that pushed it past every other entry in the world:
-
-1. **Diffusion-based exploration** — every tile accumulates a "fog" value over
-   time; ants are pulled toward the highest-value frontier (`_init_explore`
-   + `_explore`).
-2. **Group-based combat with minimax** — ants in mutual gamma-distance form a
-   "fight group"; we exhaustively search every (my_combo × enemy_combo) and
-   pick the move that maximises `(enemy_dead − my_dead)` under the official
-   battle-resolution rule (`_fight`).
-
-Empirical (3 games × 500 turns on `random_walk_02p_01`):
-
-| Opponent | XathisBot wins | XathisBot losses | Draws |
-|----------|---:|---:|---:|
-| RandomBot | 3 | 0 | 0 |
-| HoldBot   | 3 | 0 | 0 |
-| HunterBot | 3 | 0 | 0 |
-| GreedyBot | 3 | 0 | 0 |
-| LeftyBot  | 3 | 0 | 0 |
-| 4-Player  | 3 | 0 | 0 |
-
-That's the bar: any successor (the ML/RL bot you're planning) must beat
-xathis_bot to be world-class. Try it yourself:
-
-```bash
-make test-vs-xathis      # one head-to-head game with replay
-make benchmark-xathis    # full benchmark suite, xathis under test
+```text
+map + game state
+       │
+       ▼
+priority policy
+  1. continue valid standing orders
+  2. protect colony growth
+  3. target enemy hills
+  4. collect food
+  5. engage when advantageous
+  6. explore unseen space
+       │
+       ▼
+collision-safe orders ──► engine / sandbox ──► replay + result artifacts
+                                      │
+                                      └──────► benchmark aggregation
 ```
 
-## Testing & Evaluation
+This is a rule-based game agent, not a trained language model or reinforcement-
+learning policy. The repository does include a reward-design analysis for a
+possible learned successor, but that document is a design exercise rather than
+implemented RL behavior.
 
-I built a comprehensive testing framework to systematically evaluate performance:
+## Evaluation contract
 
-### Testing Infrastructure
-- **Probabilistic testing** - Run 10+ games per opponent to calculate win rates
-- **Performance benchmarking** - Track ant efficiency, territory control, resource utilization
-- **Game replay analysis** - Visualize bot behavior and identify improvement areas
-- **Automated test suite** - Makefile commands for consistent testing
+The project supports three useful levels of evidence:
 
-### Reward Function Analysis
-I documented the implicit reward structure in `reward_analysis.md` and designed a framework for potential reinforcement learning:
-
-```python
-def calculate_reward(state, action, next_state):
-    reward = 0.0
-    
-    # Primary objectives
-    ant_count_reward = (next_state.my_ants - state.my_ants) * 10.0
-    food_collected_reward = (state.food_collected - next_state.food_collected) * 5.0
-    enemy_ants_killed_reward = (state.enemy_ants - next_state.enemy_ants) * 15.0
-    
-    # Penalties
-    ant_death_penalty = (state.my_ants - next_state.my_ants) * -5.0
-    starvation_penalty = -1.0 if next_state.my_ants == 0 else 0.0
-    
-    return reward
-```
-
-## Next Steps
-
-### Immediate Improvements
-1. **Better exploration strategy** - Study LeftyBot's wall-following more carefully
-2. **Food collection optimization** - Analyze GreedyBot's efficiency techniques  
-3. **Combat mechanics** - Improve enemy ant hunting and hill targeting
-4. **Threshold tuning** - Optimize distance thresholds and priority weights
-
-### Future Development
-1. **Reinforcement Learning** - Implement the reward function framework I designed
-2. **Neural Networks** - Use the state space architecture for deep learning
-3. **Self-play training** - Multi-agent learning with multiple bot instances
-4. **Transfer learning** - Adapt strategies across different map configurations
-
-## Getting Started
-
-### Setup
-The project uses [`uv`](https://docs.astral.sh/uv/) as the canonical
-package manager (with `pip` as a fallback). Dependencies are declared in
-`pyproject.toml`; lock state lives in `uv.lock`.
+1. `make pytest` checks deterministic components and structural contracts.
+2. `make test` runs a real 30-turn game through the local engine.
+3. Benchmark targets run repeated matches against named reference opponents and
+   emit machine-readable results for analysis.
 
 ```bash
-git clone <repository-url>
-cd AntsAIBot
-
-# One-step install (uses uv if available, falls back to pip + venv).
-make install
-
-# Or, manually:
-uv sync --all-extras                      # canonical
-# pip install -e ".[dev]"                 # fallback
-
-make test                # Run a quick 30-turn integration game
-make pytest              # Run the unit-test suite (~140 tests)
-make visualize-latest    # Open the latest replay in your browser
+make pytest
+make test
+make test-vs-xathis
+make benchmark-xathis
 ```
 
-The project ships three optional dependency extras:
+Reproducing an engine run requires two independent values. `engine_seed`
+controls engine-side randomness such as food generation; `player_seed` is sent
+to each bot so opponents with randomized policies can reproduce their choices.
+The showcased Make targets default to `SEED=42`: game targets pass it as both
+values, while the benchmark runner uses it as a recorded master seed from which
+it derives and records an engine/player seed pair for every game. Override it
+with a command such as `make benchmark SEED=73`. The same code revision, map,
+arguments, bot revisions, and both per-game seeds are required for a repeatable
+comparison. Wall-clock timeouts and runtime differences remain external
+sources of variation.
 
-| Extra | What it adds | When you need it |
-|-------|--------------|------------------|
-| `[test]` | `pytest`, `pytest-cov` | Running the unit-test suite |
-| `[analysis]` | `pandas`, `numpy`, `matplotlib`, `seaborn`, `scipy` | Running `scripts/analyze_results.py` and statistical analysis Make targets |
-| `[dev]` | Both of the above | Local development |
+[`statistics.json`](statistics.json) and
+[`parallel_statistics.json`](parallel_statistics.json) are retained historical
+runs, not a current leaderboard. They were produced at different times and do
+not establish a general win-rate claim. A publishable comparison should record
+the code revision, map set, seeds, turn limit, opponent revision, raw results,
+and aggregation command in the same evidence bundle.
 
-### Testing
+## Local setup
+
+The canonical environment uses [`uv`](https://docs.astral.sh/uv/):
+
 ```bash
-# Unit tests (fast — uses pytest)
-make pytest                 # Full suite
-make pytest-quick           # Skip subprocess sample-bot tests
-make pytest-coverage        # With coverage report
+git clone https://github.com/T-Py-T/ants-strategy-agent.git
+cd ants-strategy-agent
+uv sync --all-extras
 
-# Integration testing (real games)
-make test-probabilistic     # Statistical analysis (10 games per opponent)
-make test-against-samples   # Multi-opponent testing
-make benchmark              # Performance benchmarking
-
-# Test against specific opponents
-make test-against-random    # Baseline
-make test-against-greedy    # Food collection
-make test-against-hunter    # Combat
+make pytest
+make test
+make visualize-latest
 ```
 
-### Development
+Optional dependency groups are explicit so a contributor can install only the
+surface being exercised:
+
+| Extra | Contents | Use |
+| --- | --- | --- |
+| `[test]` | pytest and coverage support | Unit and integration regression checks |
+| `[analysis]` | pandas, NumPy, SciPy, Matplotlib, and Seaborn | Benchmark aggregation and plots |
+| `[dev]` | Both groups | Complete contributor environment |
+
+Docker and a VS Code dev container are available when a host-local Python/Java
+toolchain is undesirable:
+
 ```bash
-# Docker environment
 make docker-build
 make docker-test
-
-# VS Code Dev Container
-# Open in VS Code → "Dev Containers: Reopen in Container"
-# (auto-runs `uv sync --all-extras` on first start)
 ```
 
-### Continuous Integration
-Every push and pull request runs the full pytest matrix on Python 3.12 /
-3.13, plus a real-game integration check (`make test`) and a
-Docker image build/run smoke test, via `.github/workflows/ci.yml`.
+The hosted workflow is intentionally a pull-request merge gate. Routine branch
+pushes do not consume GitHub Actions minutes; agents are expected to run the
+same checks locally before opening or updating a PR.
 
 ## Project Structure
 
 ```
-AntsAIBot/
-├── .devcontainer/       # VS Code Dev Container configuration
-├── .github/workflows/   # GitHub Actions CI (pytest matrix + integration + docker)
-├── src/
-│   ├── ants/            # Game engine (Ants, Game, sandbox, run_game)
-│   ├── bots/            # AdvancedBot — my bot implementation
-│   ├── sample_bots/     # Reference opponents (Python / Java / C# / PHP)
-│   └── tools/
-│       ├── playgame.py  # Engine driver / runner
-│       └── mapgen/      # Map-generation utilities
-├── tests/               # pytest suite (unit + structural backstops)
-├── visualizer/          # Game replay visualization
-├── scripts/             # Statistical-analysis + benchmarking scripts
-├── maps/                # Game maps (example, maze, multi_hill_maze, random_walk)
-├── submission_test/     # Submission packaging sandbox
-├── game_logs/           # Test outputs and game replays
-├── pyproject.toml       # Project metadata, deps, extras, pytest config
-├── uv.lock              # Pinned dependency resolution
-├── Dockerfile           # Slim runtime image (Python 3.13 + JDK 21)
-└── Makefile             # Friendly entry points for every workflow
+src/
+├── ants/               # engine, game state, protocol, sandbox
+├── bots/               # strategy bot and partial Xathis reimplementation
+├── sample_bots/        # fixed evaluation opponents in several languages
+└── tools/              # match runner and map generation
+tests/                  # deterministic regression suite
+scripts/                # benchmark and analysis entry points
+visualizer/             # replay viewer
+maps/                   # retained evaluation maps
+docs/reference/xathis/  # preserved historical reference source
 ```
 
----
+## Scope and provenance
 
-For more details on the Ants AI Challenge, see the [official tutorial](http://ants.aichallenge.org/ants_tutorial.php).
+Taylor's work includes the strategy implementation, partial Python Xathis
+reimplementation, integration hardening, tests, benchmark/analysis tooling,
+and developer workflow around the challenge. The repository also preserves
+challenge-engine, sample-opponent, visualizer, and historical Xathis reference
+material so the system can be exercised locally. Those retained components are
+reference and compatibility inputs, not presented as original work; see
+[`docs/gitroll-triage.md`](docs/gitroll-triage.md) for the explicit maintenance
+boundary.
+
+The preserved Java sources under `docs/reference/xathis/` are the historical
+first-place Xathis bot. `src/bots/xathis_bot.py` is an incomplete Python
+reimplementation: several strategy phases remain no-ops, and its combat search
+is a simplified, bounded substitute for the original algorithm. Its tests show
+that the implemented pieces and engine integration work; they do not establish
+strategic fidelity or strength equivalent to the winning Java bot. Xathis
+matchups in this repository are therefore regression and comparison inputs,
+not evidence of world-class competitive performance.
+
+The repository does not currently publish a repository-wide license file.
+Third-party source remains subject to its original terms and retained notices.
