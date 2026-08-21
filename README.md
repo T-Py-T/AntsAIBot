@@ -78,6 +78,27 @@ not establish a general win-rate claim. A publishable comparison should record
 the code revision, map set, seeds, turn limit, opponent revision, raw results,
 and aggregation command in the same evidence bundle.
 
+### Current retained evidence
+
+[`results/current-evidence-v1/`](results/current-evidence-v1/) is the first
+current-SHA packet. Its fixed 14-game workload completed with zero engine errors
+and 14 draws: zero wins and zero losses. The value of this small packet is the
+traceable benchmark-to-replay path, not strategic-performance evidence.
+
+| Question | Exact artifact |
+| --- | --- |
+| What ran? | [`benchmarks/current-evidence-v1.json`](benchmarks/current-evidence-v1.json) |
+| What happened in every game? | [`results/current-evidence-v1/deterministic-result.json`](results/current-evidence-v1/deterministic-result.json) |
+| What did the runner emit? | [`results/current-evidence-v1/benchmark-raw.json`](results/current-evidence-v1/benchmark-raw.json) |
+| Can I inspect a game? | [`results/current-evidence-v1/replay/four-player-final.replay`](results/current-evidence-v1/replay/four-player-final.replay) |
+| Are the files intact? | [`results/current-evidence-v1/manifest.json`](results/current-evidence-v1/manifest.json) |
+| What does it prove? | [`results/current-evidence-v1/README.md`](results/current-evidence-v1/README.md) |
+
+The packet is tied to default-branch commit `69bc75d6e6bb26c5f68ca02432bf313aae4aa2b2`,
+one master seed, two games per matchup, and a 200-turn cap. It is a deterministic
+regression sample, not a statistically significant win-rate estimate or a
+universal strategy claim.
+
 ## Local setup
 
 The canonical environment uses [`uv`](https://docs.astral.sh/uv/):
