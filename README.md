@@ -8,6 +8,19 @@ The engineering focus is the evaluation loop around the bot: run repeatable
 matches, inspect replays, compare strategies against fixed opponents, and keep
 the engine/protocol boundary covered by tests.
 
+**Current evidence boundary:** the public artifacts demonstrate a reproducible
+game-agent evaluation platform, not a leaderboard-strength or reinforcement-
+learning result. The completed 1,000-turn run against the historical Xathis
+Java bot was a 3–0 loss. Broader competitive evaluation remains a separate,
+unresolved track; the retained public packet does not support a win-rate claim.
+
+![The retained deterministic replay rendered in the local visualizer, showing
+four ant colonies, fog of war, score history, and turn controls. This image
+demonstrates the replay path rather than a competitive result.](docs/assets/replay-current-evidence.png)
+
+*Retained deterministic replay at turn 2/200. It demonstrates the working
+map, fog-of-war, ant, score-history, and playback surfaces—not a win claim.*
+
 ## At a glance
 
 | Area | Public evidence | Signal |
@@ -18,6 +31,7 @@ the engine/protocol boundary covered by tests.
 | Regression protection | [`tests/`](tests), [PR workflow](.github/workflows/ci.yml) | Unit, protocol, engine, sample-bot, Docker, and real-game checks |
 | Qualitative debugging | [`visualizer/`](visualizer) | Browser replay inspection for behavior and failure analysis |
 | Historical comparison | [`src/bots/xathis_bot.py`](src/bots/xathis_bot.py), [`docs/reference/xathis/`](docs/reference/xathis) | Partial Python reimplementation beside the preserved winning Java source |
+| Provenance | [`docs/LICENSING.md`](docs/LICENSING.md), [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) | Apache-2.0 project boundary with explicit historical-source exceptions |
 
 ## System design
 
@@ -129,8 +143,8 @@ make visualize-evidence
 ants, score history, and turn controls. `make visualize-latest` instead opens
 the newest replay produced under `game_logs/` during local development.
 
-Install the local commit gate once with `uv run pre-commit install`. It runs a
-staged-diff check and the full test suite before a commit is accepted.
+Contributor commit-gate setup and validation commands are maintained in
+[`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 Optional dependency groups are explicit so a contributor can install only the
 surface being exercised:
@@ -149,9 +163,9 @@ make docker-build
 make docker-test
 ```
 
-The hosted workflow is intentionally a pull-request merge gate. Routine branch
-pushes do not consume GitHub Actions minutes; agents are expected to run the
-same checks locally before opening or updating a PR.
+The hosted workflow is intentionally a pull-request merge gate. See
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for the local-validation and branch
+workflow.
 
 ## Project Structure
 
@@ -168,11 +182,11 @@ maps/                   # retained evaluation maps
 docs/reference/xathis/  # preserved historical reference source
 ```
 
-## Scope and provenance
+## Scope, licensing, and provenance
 
-Taylor's work includes the current `AdvancedBot`, partial Python Xathis
-reimplementation, integration hardening, tests, benchmark/analysis tooling,
-and developer workflow around the challenge. `InfluenceBot` is a recovered,
+Taylor's work includes the current `AdvancedBot`, the Python integration around
+a partial Xathis adaptation, integration hardening, tests, benchmark/analysis
+tooling, and developer workflow around the challenge. `InfluenceBot` is a recovered,
 attributed strategy originally written by Tim Whitson; Taylor's repository work
 on it is the current-protocol adaptation, characterization, and comparative
 evaluation—not authorship of the underlying algorithm. The repository also
@@ -185,12 +199,24 @@ boundary.
 
 The preserved Java sources under `docs/reference/xathis/` are the historical
 first-place Xathis bot. `src/bots/xathis_bot.py` is an incomplete Python
-reimplementation: several strategy phases remain no-ops, and its combat search
-is a simplified, bounded substitute for the original algorithm. Its tests show
-that the implemented pieces and engine integration work; they do not establish
-strategic fidelity or strength equivalent to the winning Java bot. Xathis
-matchups in this repository are therefore regression and comparison inputs,
-not evidence of world-class competitive performance.
+reimplementation that directly adapts Xathis constants, data structures, phase
+ordering, and methods: several strategy phases remain no-ops, and its combat
+search is a simplified, bounded substitute for the original algorithm. Its
+tests show that the implemented pieces and engine integration work; they do not
+establish strategic fidelity or strength equivalent to the winning Java bot.
+Xathis matchups in this repository are therefore regression and comparison
+inputs, not evidence of world-class competitive performance.
 
-The repository does not currently publish a repository-wide license file.
-Third-party source remains subject to its original terms and retained notices.
+Taylor's original contributions and the Apache-licensed AI Challenge-derived
+infrastructure are available under the
+[`Apache License 2.0`](LICENSE). The project license does not relicense two
+attributed historical strategy lineages for which no license grant was located:
+the unchanged Xathis Java snapshot, Xathis-derived portions of the Python
+adaptation, and the original portions of Tim Whitson's influence-map bot. Those
+portions remain under their authors' terms and are excluded from the project
+grant; Taylor's independently authored integration work remains Apache-2.0.
+
+Read [`docs/LICENSING.md`](docs/LICENSING.md) for the component inventory and
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for exact upstream revisions
+and exceptions. Contributions follow [`CONTRIBUTING.md`](CONTRIBUTING.md), and
+security reports follow [`SECURITY.md`](SECURITY.md).
