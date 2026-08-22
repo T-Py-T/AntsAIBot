@@ -51,7 +51,13 @@ that bar. The README records the current public evidence boundary.
 ## Algorithmic baseline versus reinforcement learning
 
 The algorithmic policies are deterministic, inspectable baselines. The future
-RL track should remain a separate entry point and artifact family:
+RL track should remain a separate entry point and artifact family.
+
+The executable historical Xathis Java bot is the fixed competitive benchmark
+for this track. It supplies the outcome metric for trained policies; its
+presence does not imply a performance claim for the current algorithmic policy.
+
+The RL track should:
 
 - train several model/policy variants from explicit observations, actions, and
   episodic outcomes;

@@ -10,9 +10,10 @@ the engine/protocol boundary covered by tests.
 
 **Current evidence boundary:** the public artifacts demonstrate a reproducible
 game-agent evaluation platform, not a leaderboard-strength or reinforcement-
-learning result. The completed 1,000-turn run against the historical Xathis
-Java bot was a 3–0 loss. Broader competitive evaluation remains a separate,
-unresolved track; the retained public packet does not support a win-rate claim.
+learning result. The historical Xathis Java bot is the fixed competitive
+benchmark for future reinforcement-learning attempts. Each trained policy will
+be scored against it across frozen maps, seeds, turn limits, and outcome metrics
+before any comparative-performance claim is made.
 
 ![The retained deterministic replay rendered in the local visualizer, showing
 four ant colonies, fog of war, score history, and turn controls. This image
@@ -108,8 +109,8 @@ and aggregation command in the same evidence bundle.
 
 [`results/current-evidence-v1/`](results/current-evidence-v1/) is the first
 current-SHA packet. Its fixed 14-game workload completed with zero engine errors
-and 14 draws: zero wins and zero losses. The value of this small packet is the
-traceable benchmark-to-replay path, not strategic-performance evidence.
+and 14 draws. The value of this small packet is the traceable
+benchmark-to-replay path, not strategic-performance evidence.
 
 | Question | Exact artifact |
 | --- | --- |
