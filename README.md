@@ -12,7 +12,7 @@ the engine/protocol boundary covered by tests.
 
 | Area | Public evidence | Signal |
 | --- | --- | --- |
-| Strategy implementation | [`src/bots/bot.py`](src/bots/bot.py) | Hierarchical objectives, persistent orders, collision avoidance, exploration, and combat heuristics |
+| Strategy implementations | [`src/bots/bot.py`](src/bots/bot.py), [`src/bots/influence_bot.py`](src/bots/influence_bot.py) | Current hierarchical policy beside an attributed, recovered influence-map baseline |
 | Game runtime | [`src/ants/`](src/ants), [`src/tools/playgame.py`](src/tools/playgame.py) | Local engine, sandboxing, protocol parsing, and match orchestration |
 | Evaluation | [`Makefile`](Makefile), [`scripts/benchmark.py`](scripts/benchmark.py) | Named head-to-head, probabilistic, and benchmark entry points |
 | Regression protection | [`tests/`](tests), [PR workflow](.github/workflows/ci.yml) | Unit, protocol, engine, sample-bot, Docker, and real-game checks |
@@ -39,10 +39,19 @@ collision-safe orders ──► engine / sandbox ──► replay + result artif
                                       └──────► benchmark aggregation
 ```
 
-This is a rule-based game agent, not a trained language model or reinforcement-
-learning policy. The repository does include a reward-design analysis for a
-possible learned successor, but that document is a design exercise rather than
-implemented RL behavior.
+The diagram describes the current default `AdvancedBot`. The independently
+invocable `InfluenceBot` uses propagated heat maps for food, fog-of-war edges,
+combat safety, hill defense, and coordinated waves. Its historical class name
+is `IForOneWelcomeOurNewInsectOverlords`; the descriptive alias makes its role
+clear without erasing the source identity. See
+[`docs/STRATEGY_LINEAGE.md`](docs/STRATEGY_LINEAGE.md) for the exact lineage,
+attribution, and evaluation boundary.
+
+The implemented bots are rule-based agents, not trained language models or
+reinforcement-learning policies. Future RL work is a separate model track: it
+will train policy variants from state/action/reward trajectories and evaluate
+them against frozen algorithmic baselines. No model-performance claim is made
+until those runs and their artifacts exist.
 
 ## Evaluation contract
 
@@ -58,6 +67,9 @@ make pytest
 make test
 make test-vs-xathis
 make benchmark-xathis
+make test-influence-vs-current
+make test-influence-vs-xathis
+make benchmark-influence
 ```
 
 Reproducing an engine run requires two independent values. `engine_seed`
@@ -146,7 +158,7 @@ same checks locally before opening or updating a PR.
 ```
 src/
 ├── ants/               # engine, game state, protocol, sandbox
-├── bots/               # strategy bot and partial Xathis reimplementation
+├── bots/               # current policy, recovered baseline, partial Xathis
 ├── sample_bots/        # fixed evaluation opponents in several languages
 └── tools/              # match runner and map generation
 tests/                  # deterministic regression suite
@@ -158,12 +170,16 @@ docs/reference/xathis/  # preserved historical reference source
 
 ## Scope and provenance
 
-Taylor's work includes the strategy implementation, partial Python Xathis
+Taylor's work includes the current `AdvancedBot`, partial Python Xathis
 reimplementation, integration hardening, tests, benchmark/analysis tooling,
-and developer workflow around the challenge. The repository also preserves
-challenge-engine, sample-opponent, visualizer, and historical Xathis reference
-material so the system can be exercised locally. Those retained components are
-reference and compatibility inputs, not presented as original work; see
+and developer workflow around the challenge. `InfluenceBot` is a recovered,
+attributed strategy originally written by Tim Whitson; Taylor's repository work
+on it is the current-protocol adaptation, characterization, and comparative
+evaluation—not authorship of the underlying algorithm. The repository also
+preserves challenge-engine, sample-opponent, visualizer, and historical Xathis
+reference material so the system can be exercised locally. Those retained
+components are reference and compatibility inputs, not presented as original
+work; see
 [`docs/gitroll-triage.md`](docs/gitroll-triage.md) for the explicit maintenance
 boundary.
 
