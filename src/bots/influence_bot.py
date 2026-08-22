@@ -120,6 +120,8 @@ class IForOneWelcomeOurNewInsectOverlords:
         self.wave_dir = None
         self.view_distance = 0.0
         self.visibility_map = []
+        self._vision_offsets = ()
+        self._visible_locs = set()
         self._is_setup = False
 
     def do_setup(self, ants):
@@ -127,6 +129,13 @@ class IForOneWelcomeOurNewInsectOverlords:
         """
         self.view_distance = sqrt(ants.viewradius2)
         self.visibility_map = self.map_zeros(ants.map)
+        vision_radius = int(self.view_distance)
+        self._vision_offsets = tuple(
+            (row_delta, col_delta)
+            for row_delta in range(-vision_radius, vision_radius + 1)
+            for col_delta in range(-vision_radius, vision_radius + 1)
+            if row_delta**2 + col_delta**2 <= ants.viewradius2
+        )
 
         global nrows, ncols
         nrows = len(self.visibility_map)
@@ -144,19 +153,9 @@ class IForOneWelcomeOurNewInsectOverlords:
         """Bridge the historical tuple API to the current bot helper."""
         return ants.destination(loc[0], loc[1], direction)
 
-    @staticmethod
-    def _visible(ants, loc):
+    def _visible(self, loc):
         """Return whether ``loc`` is inside any friendly ant's vision circle."""
-        if loc is None:
-            return False
-
-        row, col = loc
-        for ant_row, ant_col in ants.my_ants():
-            row_delta = min(abs(row - ant_row), ants.height - abs(row - ant_row))
-            col_delta = min(abs(col - ant_col), ants.width - abs(col - ant_col))
-            if row_delta**2 + col_delta**2 <= ants.viewradius2:
-                return True
-        return False
+        return loc is not None and loc in self._visible_locs
 
     def map_zeros(self, amap):
         """Create map of zeroes the same size as given
@@ -168,16 +167,26 @@ class IForOneWelcomeOurNewInsectOverlords:
 
         return zm
 
-    def update_visibility(self, ants):
+    def update_visibility(self, my_ants):
         """Update locations that have been seen as 0,
         increment locations that are not visible (number of turns that loc was not visible)
         """
-        for r, row in enumerate(self.visibility_map):
-            for c, _ in enumerate(row):
-                if self._visible(ants, (r, c)):
-                    self.visibility_map[r][c] = 0
-                else:
-                    self.visibility_map[r][c] += 1
+        for row in self.visibility_map:
+            for col in range(len(row)):
+                row[col] += 1
+
+        height = len(self.visibility_map)
+        width = len(self.visibility_map[0])
+        self._visible_locs = {
+            (
+                (ant_row + row_delta) % height,
+                (ant_col + col_delta) % width,
+            )
+            for ant_row, ant_col in my_ants
+            for row_delta, col_delta in self._vision_offsets
+        }
+        for row, col in self._visible_locs:
+            self.visibility_map[row][col] = 0
 
     def set_stop_locs(self, amap):
         """Locations that stop propagation of the BFS
@@ -358,7 +367,7 @@ class IForOneWelcomeOurNewInsectOverlords:
         """
         if self.my_hill is None:
             return []
-        if not self._visible(ants, self.my_hill) or any(
+        if not self._visible(self.my_hill) or any(
             self._distance(ants, enemy, self.my_hill) <= standoff
             for enemy in enemy_ants
         ):
@@ -429,12 +438,12 @@ class IForOneWelcomeOurNewInsectOverlords:
         """
         if not self._is_setup:
             self.do_setup(ants)
-        self.update_visibility(ants)
+        my_ants = ants.my_ants()
+        self.update_visibility(my_ants)
 
         # The historical code annotated the runtime map in place. Work on a
         # copy so strategy-only markers cannot leak into the protocol state.
         amap = [row[:] for row in ants.map]
-        my_ants = ants.my_ants()
 
         # add hills if not already added
         if not self.my_hill:
@@ -502,13 +511,6 @@ class IForOneWelcomeOurNewInsectOverlords:
             for c, tile in enumerate(row):
                 if tile in blocked:
                     mmap[r][c] = -10000
-
-        # A friendly ant occupying its hill prevents the engine from spawning
-        # banked food. Keep the spawn square clear even when all ordinary
-        # influences tie and the historical sorter would otherwise stay put.
-        if self.my_hill:
-            hill_row, hill_col = self.my_hill
-            mmap[hill_row][hill_col] = -10000
 
         self.issue_orders(my_ants, ants, mmap)
 

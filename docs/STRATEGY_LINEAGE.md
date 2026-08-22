@@ -19,10 +19,9 @@ The recovered source depended on tuple-shaped movement helpers, a vision matrix,
 and a setup callback that the current bot protocol does not provide. Its adapter
 computes the same toroidal vision circle locally, translates tuple calls to the
 current helper API, initializes lazily on the first turn, and annotates a copy
-of the runtime map so strategy markers cannot corrupt protocol state. It also
-keeps the friendly hill clear because an occupying ant prevents the current
-engine from spawning banked food. Food, stale-visibility, combat, hill-defense,
-wave, and order-selection logic remain the historical algorithm.
+of the runtime map so strategy markers cannot corrupt protocol state. Food,
+stale-visibility, combat, hill-defense, wave, and order-selection logic remain
+the historical algorithm.
 
 ## What must be measured before changing the default
 

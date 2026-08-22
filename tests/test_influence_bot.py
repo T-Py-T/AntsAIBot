@@ -59,6 +59,7 @@ class FakeAnts:
         self._my_hills = list(my_hills)
         self._enemy_hills = list(enemy_hills)
         self._food = list(food)
+        self.my_ants_calls = 0
         self.orders = []
         self.map = [[LAND for _ in range(width)] for _ in range(height)]
         for row, col in water:
@@ -71,6 +72,7 @@ class FakeAnts:
             self.map[row][col] = owner
 
     def my_ants(self):
+        self.my_ants_calls += 1
         return list(self._my_ants)
 
     def enemy_ants(self):
@@ -106,17 +108,25 @@ def test_descriptive_alias_keeps_historical_class_identity() -> None:
 
 
 def test_visibility_age_resets_inside_current_vision_circle() -> None:
-    ants = FakeAnts(height=9, width=9, viewradius2=1, my_ants=[(4, 4)])
+    ants = FakeAnts(
+        height=9,
+        width=9,
+        viewradius2=1,
+        my_ants=[(4, 4), (0, 0)],
+    )
     bot = InfluenceBot()
     bot.do_setup(ants)
     bot.visibility_map = [[5 for _ in range(9)] for _ in range(9)]
 
-    bot.update_visibility(ants)
+    bot.update_visibility(ants.my_ants())
 
     assert bot.visibility_map[4][4] == 0
     assert bot.visibility_map[3][4] == 0
     assert bot.visibility_map[4][5] == 0
+    assert bot.visibility_map[8][0] == 0
+    assert bot.visibility_map[0][8] == 0
     assert bot.visibility_map[2][4] == 6
+    assert ants.my_ants_calls == 1
 
 
 def test_food_influence_moves_an_ant_toward_collection_range() -> None:
@@ -134,15 +144,14 @@ def test_food_influence_moves_an_ant_toward_collection_range() -> None:
     assert ants.map[7][9] == FOOD
 
 
-def test_ant_vacates_hill_so_banked_food_can_spawn() -> None:
+def test_tied_influences_preserve_historical_stay_choice() -> None:
     ants = FakeAnts(my_ants=[(7, 7)], my_hills=[(7, 7)])
     bot = InfluenceBot()
 
     bot.do_turn(ants)
 
-    assert len(ants.orders) == 1
-    row, col, direction = ants.orders[0]
-    assert ants.destination(row, col, direction) != (7, 7)
+    assert ants.orders == []
+    assert ants.my_ants_calls == 1
 
 
 def test_stale_visibility_edges_become_exploration_targets() -> None:
@@ -156,7 +165,7 @@ def test_stale_visibility_edges_become_exploration_targets() -> None:
     bot = InfluenceBot()
     bot.do_setup(ants)
     bot.visibility_map = [[6 for _ in range(15)] for _ in range(15)]
-    bot.update_visibility(ants)
+    bot.update_visibility(ants.my_ants())
 
     edges = bot.edge_locs(ants.my_ants(), ants)
 
