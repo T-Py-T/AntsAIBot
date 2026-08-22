@@ -11,7 +11,7 @@ the competition winner it references.
 | Policy | Repository entry point | Lineage | Current role |
 | --- | --- | --- | --- |
 | `AdvancedBot` | `src/bots/bot.py` | Replaced the initial bot in commit `ec7515f` and was subsequently maintained in this repository | Current default algorithmic policy |
-| `InfluenceBot` / `IForOneWelcomeOurNewInsectOverlords` | `src/bots/influence_bot.py` | Exact strategy recovered from initial commit `fd85c05`; original header credits Tim Whitson | Attributed influence-map baseline, adapted to the current protocol and covered by characterization tests |
+| `InfluenceBot` / `IForOneWelcomeOurNewInsectOverlords` | `src/bots/influence_bot.py` | Historical strategy imported in commit `fd85c05`; its original header credits Tim Whitson | Attributed influence-map baseline, adapted to the current protocol and covered by characterization tests |
 | Partial `XathisBot` | `src/bots/xathis_bot.py` | Repository-owned partial Python reimplementation of the preserved historical Java source | Regression opponent only; not strategically equivalent to the winner |
 | Historical Xathis Java source | `docs/reference/xathis/` | Preserved first-place reference implementation | Fidelity target for a future executable Java comparison |
 

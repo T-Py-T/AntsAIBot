@@ -47,7 +47,7 @@ clear without erasing the source identity. See
 [`docs/STRATEGY_LINEAGE.md`](docs/STRATEGY_LINEAGE.md) for the exact lineage,
 attribution, and evaluation boundary.
 
-Both current policies are rule-based agents, not trained language models or
+The implemented bots are rule-based agents, not trained language models or
 reinforcement-learning policies. Future RL work is a separate model track: it
 will train policy variants from state/action/reward trajectories and evaluate
 them against frozen algorithmic baselines. No model-performance claim is made

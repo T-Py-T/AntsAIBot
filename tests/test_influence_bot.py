@@ -1,5 +1,8 @@
 """Characterization tests for the recovered influence-map strategy."""
 
+# The protocol double intentionally exposes a broad, method-shaped fixture API.
+# pylint: disable=missing-function-docstring,too-many-arguments,too-many-instance-attributes
+
 from __future__ import annotations
 
 import importlib.util
@@ -150,7 +153,7 @@ def test_tied_influences_preserve_historical_stay_choice() -> None:
 
     bot.do_turn(ants)
 
-    assert ants.orders == []
+    assert not ants.orders
     assert ants.my_ants_calls == 1
 
 
@@ -184,7 +187,6 @@ def test_orders_reserve_unique_destinations() -> None:
     bot.do_turn(ants)
 
     destinations = [
-        ants.destination(row, col, direction)
-        for row, col, direction in ants.orders
+        ants.destination(row, col, direction) for row, col, direction in ants.orders
     ]
     assert len(destinations) == len(set(destinations))
