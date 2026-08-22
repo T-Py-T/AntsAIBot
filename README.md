@@ -185,9 +185,9 @@ docs/reference/xathis/  # preserved historical reference source
 
 ## Scope, licensing, and provenance
 
-Taylor's work includes the current `AdvancedBot`, partial Python Xathis
-reimplementation, integration hardening, tests, benchmark/analysis tooling,
-and developer workflow around the challenge. `InfluenceBot` is a recovered,
+Taylor's work includes the current `AdvancedBot`, the Python integration around
+a partial Xathis adaptation, integration hardening, tests, benchmark/analysis
+tooling, and developer workflow around the challenge. `InfluenceBot` is a recovered,
 attributed strategy originally written by Tim Whitson; Taylor's repository work
 on it is the current-protocol adaptation, characterization, and comparative
 evaluation—not authorship of the underlying algorithm. The repository also
@@ -200,20 +200,22 @@ boundary.
 
 The preserved Java sources under `docs/reference/xathis/` are the historical
 first-place Xathis bot. `src/bots/xathis_bot.py` is an incomplete Python
-reimplementation: several strategy phases remain no-ops, and its combat search
-is a simplified, bounded substitute for the original algorithm. Its tests show
-that the implemented pieces and engine integration work; they do not establish
-strategic fidelity or strength equivalent to the winning Java bot. Xathis
-matchups in this repository are therefore regression and comparison inputs,
-not evidence of world-class competitive performance.
+reimplementation that directly adapts Xathis constants, data structures, phase
+ordering, and methods: several strategy phases remain no-ops, and its combat
+search is a simplified, bounded substitute for the original algorithm. Its
+tests show that the implemented pieces and engine integration work; they do not
+establish strategic fidelity or strength equivalent to the winning Java bot.
+Xathis matchups in this repository are therefore regression and comparison
+inputs, not evidence of world-class competitive performance.
 
 Taylor's original contributions and the Apache-licensed AI Challenge-derived
 infrastructure are available under the
 [`Apache License 2.0`](LICENSE). The project license does not relicense two
-attributed historical strategy references for which no license grant was
-located: the unchanged Xathis Java snapshot and the original portions of Tim
-Whitson's influence-map bot. Those components remain under their authors'
-terms and are excluded from the project grant.
+attributed historical strategy lineages for which no license grant was located:
+the unchanged Xathis Java snapshot, Xathis-derived portions of the Python
+adaptation, and the original portions of Tim Whitson's influence-map bot. Those
+portions remain under their authors' terms and are excluded from the project
+grant; Taylor's independently authored integration work remains Apache-2.0.
 
 Read [`docs/LICENSING.md`](docs/LICENSING.md) for the component inventory and
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for exact upstream revisions

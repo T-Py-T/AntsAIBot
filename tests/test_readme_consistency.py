@@ -184,12 +184,33 @@ def test_license_exceptions_name_the_exact_retained_sources() -> None:
     notices = (REPO_ROOT / "THIRD_PARTY_NOTICES.md").read_text()
     for required in (
         "docs/reference/xathis/",
+        "src/bots/xathis_bot.py",
         "src/bots/influence_bot.py",
         "f910f659575df2c04694ec6b6a55c7ec140c738c",
+        "144a73f486569f61ebd33d1f0c490d72a49a296e",
         "fd85c050daf3442a49ce5039ec37778bf2fa7201",
         "excluded from the root Apache-2.0 grant",
+        "must not be treated as wholly Apache-2.0",
     ):
         assert required in notices, f"third-party notice is missing {required!r}"
+
+
+def test_generated_replay_screenshot_provenance_is_recorded() -> None:
+    notices = (REPO_ROOT / "THIRD_PARTY_NOTICES.md").read_text()
+    for required in (
+        "docs/assets/replay-current-evidence.png",
+        "results/current-evidence-v1/replay/four-player-final.replay",
+        "500dd4def4e3a45105909aa6e307760885d298a3",
+        "Rendering method:",
+        "Rights basis:",
+    ):
+        assert required in notices, f"replay image notice is missing {required!r}"
+
+
+def test_security_policy_has_an_independent_private_contact() -> None:
+    policy = (REPO_ROOT / "SECURITY.md").read_text()
+    assert re.search(r"\(mailto:[^)@\s]+@[^)\s]+\)", policy)
+    assert "rather than opening a public issue" in policy
 
 
 def test_precommit_pytest_installs_the_extras_it_exercises() -> None:

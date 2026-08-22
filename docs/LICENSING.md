@@ -2,18 +2,20 @@
 
 This repository uses Apache-2.0 for Taylor's original contributions and for
 the inherited AI Challenge infrastructure that upstream documentation identifies
-as Apache-2.0. Two attributed historical strategy references have no verified
-license grant and are explicitly excluded.
+as Apache-2.0. Two attributed historical strategy lineages have no verified
+license grant; their source and adapted portions are explicitly excluded.
 
 ## Component inventory
 
 | Component | Representative paths | Provenance | Treatment here |
 | --- | --- | --- | --- |
-| Project implementation and evaluation work | `src/bots/bot.py`, `src/bots/xathis_bot.py`, `scripts/`, `tests/`, `benchmarks/`, project documentation | Authored and maintained in this repository | Apache-2.0 |
+| Project implementation and evaluation work | `src/bots/bot.py`, `scripts/`, `tests/`, `benchmarks/`, project documentation | Authored and maintained in this repository | Apache-2.0 |
 | Challenge runtime and fixtures | `src/ants/`, `src/sample_bots/`, `src/tools/`, `visualizer/`, `maps/`, `submission_test/` | Google-sponsored AI Challenge 2011 source, with local modifications | Apache-2.0, retaining upstream attribution |
 | Xathis Java reference | `docs/reference/xathis/` | Unchanged snapshot of Mathis Lichtenberger's first-place bot and postmortem | No verified license grant; excluded from the project license |
+| Xathis Python adaptation | `src/bots/xathis_bot.py` | Taylor-authored Python integration containing constants, structures, and methods adapted from the Xathis Java source | Mixed provenance; Taylor's original portions are Apache-2.0, but adapted portions have no verified grant and the file must not be treated as wholly Apache-2.0 |
 | Influence-map baseline | `src/bots/influence_bot.py` | Historical Tim Whitson strategy plus Taylor's protocol adaptation | Original portions have no verified license grant; excluded from the project license |
 | Retained run artifacts | `results/current-evidence-v1/`, `statistics.json`, `parallel_statistics.json` | Generated locally from the components above | Artifact data is provided with the repository; embedded source rights do not change |
+| Replay documentation image | `docs/assets/replay-current-evidence.png` | Project-generated browser capture of a retained replay rendered by the bundled visualizer | Apache-2.0 visualizer and project-generated data; exact source and method are recorded in `THIRD_PARTY_NOTICES.md` |
 
 ## Why Apache-2.0
 
@@ -33,7 +35,8 @@ Publishing a license for Taylor-owned and Apache-derived work cannot grant
 rights that belong to other authors. GitHub also explains that public source
 without a license remains under default copyright rules, apart from the site's
 view-and-fork permissions. Consequently, this repository does not represent
-the Xathis reference or the original Tim Whitson strategy as open source.
+the Xathis reference, Xathis-derived portions of the Python adaptation, or the
+original Tim Whitson strategy as open source.
 
 Their exact status and audit revisions are recorded in
 [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md). If a future primary-source

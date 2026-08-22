@@ -48,5 +48,6 @@ or assets, read [`docs/LICENSING.md`](docs/LICENSING.md) and record the origin,
 revision, license, and local treatment in
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
-The Xathis Java reference and the original portions of the Tim Whitson
-influence strategy are not covered by the project's Apache-2.0 grant.
+The Xathis Java reference, Xathis-derived portions of the Python adaptation,
+and the original portions of the Tim Whitson influence strategy are not
+covered by the project's Apache-2.0 grant.
