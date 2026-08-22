@@ -15,6 +15,13 @@ the competition winner it references.
 | Partial `XathisBot` | `src/bots/xathis_bot.py` | Repository-owned partial Python reimplementation of the preserved historical Java source | Regression opponent only; not strategically equivalent to the winner |
 | Historical Xathis Java source | `docs/reference/xathis/` | Preserved first-place reference implementation | Fidelity target for a future executable Java comparison |
 
+The project license covers repository-authored evaluation work and the
+Apache-licensed challenge infrastructure. It does not relicense the original
+portions of `InfluenceBot` or the historical Xathis Java snapshot: no license
+grant for either reference was located in the 2026-08-22 provenance audit.
+See [`../THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md) for the exact
+upstream revisions and [`LICENSING.md`](LICENSING.md) for the component boundary.
+
 The recovered source depended on tuple-shaped movement helpers, a vision matrix,
 and a setup callback that the current bot protocol does not provide. Its adapter
 computes the same toroidal vision circle locally, translates tuple calls to the

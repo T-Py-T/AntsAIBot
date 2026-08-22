@@ -20,6 +20,15 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 README = REPO_ROOT / "README.md"
 PYPROJECT = REPO_ROOT / "pyproject.toml"
 MAKEFILE = REPO_ROOT / "Makefile"
+PRECOMMIT = REPO_ROOT / ".pre-commit-config.yaml"
+PUBLIC_CONTRACT_FILES = (
+    "LICENSE",
+    "NOTICE",
+    "THIRD_PARTY_NOTICES.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "docs/LICENSING.md",
+)
 
 
 def _readme() -> str:
@@ -149,3 +158,42 @@ def test_make_help_lists_pytest_target() -> None:
         "`make help` output should mention the pytest target.\n"
         f"Got:\n{proc.stdout}"
     )
+
+
+def test_public_repository_contract_is_present_and_linked() -> None:
+    """Public-facing policy files should exist and be discoverable."""
+
+    readme = _readme()
+    missing = [
+        name for name in PUBLIC_CONTRACT_FILES if not (REPO_ROOT / name).is_file()
+    ]
+    assert not missing, f"missing public repository contract files: {missing}"
+
+    for name in (
+        "LICENSE",
+        "THIRD_PARTY_NOTICES.md",
+        "CONTRIBUTING.md",
+        "SECURITY.md",
+    ):
+        assert f"]({name})" in readme, f"README should link to {name}"
+
+
+def test_license_exceptions_name_the_exact_retained_sources() -> None:
+    """The root license must not silently absorb the historical references."""
+
+    notices = (REPO_ROOT / "THIRD_PARTY_NOTICES.md").read_text()
+    for required in (
+        "docs/reference/xathis/",
+        "src/bots/influence_bot.py",
+        "f910f659575df2c04694ec6b6a55c7ec140c738c",
+        "fd85c050daf3442a49ce5039ec37778bf2fa7201",
+        "excluded from the root Apache-2.0 grant",
+    ):
+        assert required in notices, f"third-party notice is missing {required!r}"
+
+
+def test_precommit_pytest_installs_the_extras_it_exercises() -> None:
+    """A clean commit gate needs the analysis imports used by the tests."""
+
+    config = PRECOMMIT.read_text()
+    assert "entry: uv run --all-extras pytest -q" in config

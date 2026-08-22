@@ -1,0 +1,49 @@
+# Licensing and provenance
+
+This repository uses Apache-2.0 for Taylor's original contributions and for
+the inherited AI Challenge infrastructure that upstream documentation identifies
+as Apache-2.0. Two attributed historical strategy references have no verified
+license grant and are explicitly excluded.
+
+## Component inventory
+
+| Component | Representative paths | Provenance | Treatment here |
+| --- | --- | --- | --- |
+| Project implementation and evaluation work | `src/bots/bot.py`, `src/bots/xathis_bot.py`, `scripts/`, `tests/`, `benchmarks/`, project documentation | Authored and maintained in this repository | Apache-2.0 |
+| Challenge runtime and fixtures | `src/ants/`, `src/sample_bots/`, `src/tools/`, `visualizer/`, `maps/`, `submission_test/` | Google-sponsored AI Challenge 2011 source, with local modifications | Apache-2.0, retaining upstream attribution |
+| Xathis Java reference | `docs/reference/xathis/` | Unchanged snapshot of Mathis Lichtenberger's first-place bot and postmortem | No verified license grant; excluded from the project license |
+| Influence-map baseline | `src/bots/influence_bot.py` | Historical Tim Whitson strategy plus Taylor's protocol adaptation | Original portions have no verified license grant; excluded from the project license |
+| Retained run artifacts | `results/current-evidence-v1/`, `statistics.json`, `parallel_statistics.json` | Generated locally from the components above | Artifact data is provided with the repository; embedded source rights do not change |
+
+## Why Apache-2.0
+
+Using the same permissive license as the upstream challenge infrastructure
+keeps the project-authored modifications compatible with their source. The
+root [`LICENSE`](../LICENSE) contains the standard Apache License 2.0 text, and
+[`NOTICE`](../NOTICE) retains the upstream project attribution.
+
+The upstream license basis is the challenge repository's starter-package
+documentation, which states that the package and challenge code were released
+under the Apache license. The audited source revision was
+`4237971f22767ef7f439d297e4e6ad7c458415dc`.
+
+## What the root license does not do
+
+Publishing a license for Taylor-owned and Apache-derived work cannot grant
+rights that belong to other authors. GitHub also explains that public source
+without a license remains under default copyright rules, apart from the site's
+view-and-fork permissions. Consequently, this repository does not represent
+the Xathis reference or the original Tim Whitson strategy as open source.
+
+Their exact status and audit revisions are recorded in
+[`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md). If a future primary-source
+license or author permission is found, update that notice with the evidence;
+do not silently broaden the root license.
+
+## Contributor rule
+
+New original contributions are accepted under Apache-2.0. Do not add third-party
+source, generated assets, benchmark opponents, or documentation unless its
+origin and redistribution terms are recorded in `THIRD_PARTY_NOTICES.md`.
+
+This inventory is a good-faith provenance record, not legal advice.
