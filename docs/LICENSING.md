@@ -26,17 +26,16 @@ root [`LICENSE`](../LICENSE) contains the standard Apache License 2.0 text, and
 
 The upstream license basis is the challenge repository's starter-package
 documentation, which states that the package and challenge code were released
-under the Apache license. The audited source revision was
-`4237971f22767ef7f439d297e4e6ad7c458415dc`.
+under the Apache license. The exact evidence and audited source revision are
+recorded in [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md).
 
 ## What the root license does not do
 
 Publishing a license for Taylor-owned and Apache-derived work cannot grant
-rights that belong to other authors. GitHub also explains that public source
-without a license remains under default copyright rules, apart from the site's
-view-and-fork permissions. Consequently, this repository does not represent
+rights that belong to other authors. No verified license grant was found for
 the Xathis reference, Xathis-derived portions of the Python adaptation, or the
-original Tim Whitson strategy as open source.
+original Tim Whitson strategy, so this repository does not represent those
+portions as open source.
 
 Their exact status and audit revisions are recorded in
 [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md). If a future primary-source

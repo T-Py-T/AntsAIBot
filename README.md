@@ -10,8 +10,9 @@ the engine/protocol boundary covered by tests.
 
 **Current evidence boundary:** the public artifacts demonstrate a reproducible
 game-agent evaluation platform, not a leaderboard-strength or reinforcement-
-learning result. Competitive claims remain blocked until multi-map, multi-seed
-matches against the executable historical Xathis bot support them.
+learning result. The completed 1,000-turn run against the historical Xathis
+Java bot was a 3–0 loss. Broader competitive evaluation remains a separate,
+unresolved track; the retained public packet does not support a win-rate claim.
 
 ![The retained deterministic replay rendered in the local visualizer, showing
 four ant colonies, fog of war, score history, and turn controls. This image
@@ -142,10 +143,8 @@ make visualize-evidence
 ants, score history, and turn controls. `make visualize-latest` instead opens
 the newest replay produced under `game_logs/` during local development.
 
-Install the local commit gate once with
-`uv run --all-extras pre-commit install`. It runs a staged-diff check and the
-full test suite before a commit is accepted. The hook requests all extras so a
-fresh environment includes the benchmark-analysis imports exercised by tests.
+Contributor commit-gate setup and validation commands are maintained in
+[`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 Optional dependency groups are explicit so a contributor can install only the
 surface being exercised:
@@ -164,9 +163,9 @@ make docker-build
 make docker-test
 ```
 
-The hosted workflow is intentionally a pull-request merge gate. Routine branch
-pushes do not consume GitHub Actions minutes; agents are expected to run the
-same checks locally before opening or updating a PR.
+The hosted workflow is intentionally a pull-request merge gate. See
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for the local-validation and branch
+workflow.
 
 ## Project Structure
 

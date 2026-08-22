@@ -13,15 +13,12 @@ the competition winner it references.
 | `AdvancedBot` | `src/bots/bot.py` | Replaced the initial bot in commit `ec7515f` and was subsequently maintained in this repository | Current default algorithmic policy |
 | `InfluenceBot` / `IForOneWelcomeOurNewInsectOverlords` | `src/bots/influence_bot.py` | Historical strategy imported in commit `fd85c05`; its original header credits Tim Whitson | Attributed influence-map baseline, adapted to the current protocol and covered by characterization tests |
 | Partial `XathisBot` | `src/bots/xathis_bot.py` | Taylor-authored Python integration that directly adapts structures and methods from the preserved historical Java source | Mixed-provenance regression opponent only; not strategically equivalent to the winner |
-| Historical Xathis Java source | `docs/reference/xathis/` | Preserved first-place reference implementation | Fidelity target for a future executable Java comparison |
+| Historical Xathis Java source | `docs/reference/xathis/` | Preserved first-place reference implementation | Fidelity reference; broader executable comparison remains unresolved |
 
-The project license covers repository-authored evaluation work and the
-Apache-licensed challenge infrastructure. It does not relicense the original
-portions of `InfluenceBot`, the historical Xathis Java snapshot, or the
-Xathis-derived portions of `src/bots/xathis_bot.py`: no license grant for either
-historical strategy lineage was located in the 2026-08-22 provenance audit.
-See [`../THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md) for the exact
-upstream revisions and [`LICENSING.md`](LICENSING.md) for the component boundary.
+Licensing is documented centrally: [`LICENSING.md`](LICENSING.md) owns the
+component boundary, while
+[`../THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md) owns exact upstream
+revisions and exceptions.
 
 The recovered source depended on tuple-shaped movement helpers, a vision matrix,
 and a setup callback that the current bot protocol does not provide. Its adapter
@@ -47,7 +44,9 @@ frozen comparison across multiple seeds and maps with, at minimum:
 single-match diagnostics. `make benchmark-influence` provides repeated local
 matchups. Results against `src/bots/xathis_bot.py` characterize a partial port,
 not the historical leaderboard winner. A claim about matching or beating the
-winner requires executing the preserved Java bot or a validated faithful port.
+winner requires retained, multi-map, multi-seed results from the preserved Java
+bot or a validated faithful port; the existing isolated Java run does not meet
+that bar. The README records the current public evidence boundary.
 
 ## Algorithmic baseline versus reinforcement learning
 
